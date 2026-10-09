@@ -21,7 +21,11 @@ export const FX_KINDS = Object.freeze({
   // position + the previous point + direction); `pt` because it is not at the caster (it roams and passes by her tile)
   chen3Wave: { a: 'qi', c: 0xdfe8ff, pt: true },
   quadShot: { a: 'volley', c: 0xfff2d0 }, featherArrow: { a: 'counter', c: 0xfff2d0 },
+  sonicStream: { a: 'volley', c: 0xff66cc },
   burst: { a: 'element', c: 0xd0a0ff },
+  musicBurst: { a: 'blast', c: 0x9b30ff, r: 1.2 },
+  feverStart: { a: 'buff', c: 0xff4bb8, r: 2.5 },
+  stageLight: { a: 'zone', c: 0xb84dff, dur: 25, r: 2.5 },
   // areas
   zone: { a: 'zone', c: 0xffb35c, dur: 3 }, healField: { a: 'zone', c: 0x62f08a, dur: 4 }, firewall: { a: 'wall', c: 0xff6a2a, dur: 4 },
   firewallBlock: { a: 'counter', c: 0xff6a2a }, tide: { a: 'zone', c: 0x5fe0ff, dur: 3, r: 2 }, storm: { a: 'zone', c: 0xd8c8a0, dur: 3 },

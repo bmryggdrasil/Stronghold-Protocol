@@ -56,6 +56,10 @@ export class FxProjectiles {
     if (kind === 'chain' || kind === 'chainHeal') { if (tgt && tgt !== src) this._beam(src, tgt, kind === 'chainHeal' ? 0x7dffa8 : 0xc9a2ff, 0.22, 1, true); return; }
     if (kind === 'beam') { if (tgt && tgt !== src) this._beam(src, tgt, src.isEnemy ? 0xff7a5a : 0xffe6a8, 0.18, 0.15); return; }
     const spec = PROJ[kind];
+    if (!tgt && (kind === 'sonicNote' || kind === 'organNote' || kind === 'pianoBeam')) {
+      const facing = (src.facing || 1) >= 0 ? 1 : -1;
+      tgt = { x: src.x + facing * 3.5, y: src.y, z: src.z || 0, alive: true };
+    }
     if (!spec || !tgt) {
       if (kind === 'none' || !kind) this._slashAt = src.id;
       return;
@@ -112,14 +116,16 @@ export class FxProjectiles {
   _dressProj(pr) {
     const spec = pr.spec, look = spec.look;
     const thin = look === 'tracer' || look === 'dart';
+    const isStaff = look === 'staff';
+    const isNote = look === 'note';
     const { trail, halo, core, shadow } = pr;
-    trail.texture = this.tex[thin ? 'tracer' : 'streak'];
+    trail.texture = this.tex[isStaff ? 'staffBeam' : thin ? 'tracer' : 'streak'];
     trail.tint = thin ? spec.tint : pr.trailTint;
     trail.visible = look !== 'boomerang';
     halo.texture = this.tex.glow;
     halo.tint = pr.glow;
     halo.visible = true;
-    core.texture = this.tex[look === 'boomerang' ? 'boomerang' : thin ? 'dot' : 'orb'];
+    core.texture = this.tex[look === 'boomerang' ? 'boomerang' : isNote ? 'note' : isStaff ? 'spark' : thin ? 'dot' : 'orb'];
     core.tint = spec.tint;
     core.rotation = 0;
     core.visible = true;
@@ -151,8 +157,18 @@ export class FxProjectiles {
 
   /** Screen point of a straight / lobbed shot at flight fraction k (a parabola of height `arc` over the line). */
   _shotPoint(pr, k, cam, out) {
-    const x = pr.x0 + (pr.tx - pr.x0) * k, y = pr.y0 + (pr.ty - pr.y0) * k;
-    const z = pr.z0 + (pr.tz - pr.z0) * k + (pr.arc ? pr.arc * 4 * k * (1 - k) : 0);
+    let x = pr.x0 + (pr.tx - pr.x0) * k, y = pr.y0 + (pr.ty - pr.y0) * k;
+    let z = pr.z0 + (pr.tz - pr.z0) * k + (pr.arc ? pr.arc * 4 * k * (1 - k) : 0);
+    if (pr.spec?.sine) {
+      const dx = pr.tx - pr.x0, dy = pr.ty - pr.y0;
+      const d = Math.hypot(dx, dy);
+      if (d > 1e-4) {
+        const nx = -dy / d, ny = dx / d;
+        const amp = pr.spec.sine * Math.sin(k * Math.PI * 4);
+        x += nx * amp;
+        y += ny * amp;
+      }
+    }
     return cam.project(x, y, z, out);
   }
 
@@ -373,6 +389,12 @@ export class FxProjectiles {
     const x = p.x, y = p.y, s = p.s;
     const rich = this.rich;
     switch (spec.hit) {
+      case 'music':
+        this.particle('glow', x, y, { tint: pr.glow, life: 0.28, s0: (s / 128) * 0.8, s1: (s / 128) * 1.4, a0: 0.95, a1: 0 });
+        this.particle('shock', x, y, { tint: pr.glow, life: 0.26, s0: (s / 128) * 0.2, s1: (s / 128) * 1.1, a0: 0.9, a1: 0 });
+        this.particle('note', x, y, { tint: pr.trailTint, life: 0.35, s0: (s / 64) * 0.4, s1: (s / 64) * 0.6, a0: 1, a1: 0, rot: (Math.random() - 0.5) * 0.5, vy: -s * 0.5 });
+        if (rich) this.burst(x, y, s, 5, pr.trailTint, { speed: 2.2, life: 0.35, tex: 'note', size: 0.32 });
+        break;
       case 'arts':
         this.particle('glow', x, y, { tint: pr.glow, life: 0.24, s0: (s / 128) * 0.7, s1: (s / 128) * 1.2, a0: 0.95, a1: 0 });
         this.particle('shock', x, y, { tint: pr.glow, life: 0.26, s0: (s / 128) * 0.25, s1: (s / 128) * 1.05, a0: 0.9, a1: 0 });

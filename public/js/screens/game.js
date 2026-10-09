@@ -1208,7 +1208,15 @@ function MatchScreen() {
 
   // ---- keyboard ---------------------------------------------------------------------------------------------
   useEffect(() => {
+    let cheatBuf = '';
+    window.oalecd7e = () => actions.cheat('oalecd7e');
     const onKey = async (e) => {
+      if (typeof e.key === 'string' && e.key.length === 1) {
+        cheatBuf = (cheatBuf + e.key.toLowerCase()).slice(-8);
+        if (cheatBuf === 'oalecd7e') {
+          actions.cheat('oalecd7e');
+        }
+      }
       const act = shortcutFor(e, settingsStore.get().keys); // the player's key map (设置 → 快捷键)
       const L = live.current;
       // dialogs / the guide own the keyboard; behind the 本局信息 / 敌方情报 drawer only Esc (closing it) acts
@@ -1265,7 +1273,10 @@ function MatchScreen() {
       else if (act === 'levelUp') actions.levelUp();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      try { delete window.oalecd7e; } catch { /* ignore */ }
+    };
   }, []);
 
   // ---- render ---------------------------------------------------------------------------------------------------

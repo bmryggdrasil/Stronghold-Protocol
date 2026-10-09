@@ -1369,18 +1369,21 @@ export class UnitView {
     let sy = 0;
     if (showSp) {
       const active = !!(this.flags & UF.SKILL);
-      const k = ammo ? ammo[0] / ammo[1] : clamp(this.sp / this.spMax, 0, 1);
+      const isFever = this.statuses && (this.statuses.has('fever') || this.statuses.has('feverState'));
+      const k = isFever ? 1 : ammo ? ammo[0] / ammo[1] : clamp(this.sp / this.spMax, 0, 1);
       ready = !active && k >= 0.999;
       sy = cy + bh / 2 + spH / 2 + 1.5;
       this.spBg.position.set(x0 - 1, sy); this.spBg.width = bw + 2; this.spBg.height = spH + 2;
       this.spFill.position.set(x0, sy); this.spFill.width = bw * k; this.spFill.height = spH;
-      this.spFill.tint = ammo ? COLORS.ammo : active ? COLORS.spActive : ready ? COLORS.spReady : COLORS.sp;
+      this.spFill.tint = isFever ? 0xff4bb8 : ammo ? COLORS.ammo : active ? COLORS.spActive : ready ? COLORS.spReady : COLORS.sp;
       this._spY = sy;
     }
     this._updateAmmoCuts(showSp && !!ammo, ammo, x0, sy, bw, spH);
-    this.spGlow.visible = ready;
-    if (ready) {
-      const pulse = 0.55 + 0.35 * Math.sin(t * 6);
+    const isFever = this.statuses && (this.statuses.has('fever') || this.statuses.has('feverState'));
+    this.spGlow.visible = ready || isFever;
+    if (ready || isFever) {
+      const pulse = 0.55 + 0.35 * Math.sin(t * (isFever ? 10 : 6));
+      this.spGlow.tint = isFever ? 0xff4bb8 : 0xffffff;
       this.spGlow.position.set(x0 + bw, this._spY);
       this.spGlow.scale.set((spH * 5) / 128);
       this.spGlow.alpha = pulse;

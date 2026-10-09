@@ -152,10 +152,14 @@ export const PROJ = Object.freeze({
   // 暴鸰's bomb (sim content/enemies/fly.js kitBombd; official projectile_bombd, speed 5): dropped from the drone, it falls
   // onto its target with a low arc and bursts where the sim's 'explode' blast goes off
   droneBomb: { look: 'shell', speed: 5, once: true, tint: 0xffe2c8, glow: 0xff5a3a, len: 0.6, width: 0.3, head: 0.5, trail: 0xff7a4a, arc: 0.35, smoke: 0x2e2824, hit: 'boom' },
+  sonicNote: { look: 'note', speed: 10, sine: 0.22, tint: 0xffe6f2, glow: 0xff3b9d, len: 0.6, width: 0.28, head: 0.46, trail: 0xff66cc, muzzle: 0xff88dd, hit: 'music' },
+  pianoBeam: { look: 'staff', speed: 18, tint: 0xffeedd, glow: 0xff4477, len: 1.8, width: 0.42, head: 0.52, trail: 0xff5588, muzzle: 0xff7799, hit: 'spark' },
+  organNote: { look: 'note', speed: 7, sine: 0.35, tint: 0xf5e6ff, glow: 0xb84dff, len: 0.65, width: 0.32, head: 0.5, trail: 0xc45cff, muzzle: 0xd470ff, hit: 'music' },
 });
 
 /** Status keys (b.ev 'status' + UF flags) → icon atlas key (render/textures.js) and colour. */
 export const STATUS_ICON = Object.freeze({
+  fever: 'fever',
   stun: 'stun', freeze: 'freeze', cold: 'cold', stealth: 'stealth', shield: 'shield', fragile: 'fragile',
   artsFragile: 'fragile', physFragile: 'fragile', elemFragile: 'fragile', sleep: 'sleep', invulnerable: 'invuln',
   silence: 'silence', slow: 'slow', sluggish: 'slow', bind: 'bind', groundbind: 'bind', fear: 'fear', tremble: 'fear', weaken: 'weaken',

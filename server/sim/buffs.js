@@ -56,6 +56,7 @@ export const FLAG_KEYS = Object.freeze([
  * Content applies statuses with `battle.applyStatus(target, key, { duration, source, value })`.
  */
 export const STATUS = Object.freeze({
+  fever: { flags: {} },
   // 晕眩: 无法移动、阻挡、攻击及使用技能 (a stunned operator releases the enemies it blocks)
   stun: { flags: { stun: true, noBlock: true }, immune: 'stun' },
   // 冻结: 无法移动、攻击及使用技能; 敌方被冻结时，法术抗性-15 (the RES cut applies to enemies only)

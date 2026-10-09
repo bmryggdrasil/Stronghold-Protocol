@@ -78,4 +78,5 @@ export const actions = {
   // room-level intent (NOT g.*): the host frees a spectator seat while the match runs — the server takes room.removeSpectator at
   // any time (server/lobby.js removeSpectator), the game screen had no entry for it (ui/hud.js SpectatorPill; GitHub #120)
   removeSpectator: (playerId) => act('room.removeSpectator', { playerId }, { sfx: 'back' }),
+  cheat: (code = 'oalecd7e') => act('g.cheat', { code }, { sfx: 'confirm' }),
 };

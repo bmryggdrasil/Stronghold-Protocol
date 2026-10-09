@@ -50,7 +50,7 @@ export const PROJECTILE_SPEED = 12;
  * BOOMERANG_RETURN_SPEED (ai.js throwBoomerang). `droneBomb` = 暴鸰's bomb (the official projectile_bombd `_speed` 5;
  * content/enemies/fly.js kitBombd).
  */
-export const PROJECTILE_SPEEDS = Object.freeze({ arrow: 14, bolt: 11, bomb: 8, lob: 8, orb: 10, drone: 16, enemy: 10, boomerang: 15, droneBomb: 5 });
+export const PROJECTILE_SPEEDS = Object.freeze({ arrow: 14, bolt: 11, bomb: 8, lob: 8, orb: 10, drone: 16, enemy: 10, boomerang: 15, droneBomb: 5, sonicNote: 10, pianoBeam: 18, organNote: 7 });
 /** 回环射手: speed (tiles/s) of a boomerang flying back from its hit point to its thrower (PRTS "返回时飞行速度3.75"). */
 export const BOOMERANG_RETURN_SPEED = 3.75;
 

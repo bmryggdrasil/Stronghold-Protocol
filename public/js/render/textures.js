@@ -869,6 +869,105 @@ const FX_DRAW = {
     g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
     c.fillStyle = g; c.fillRect(x + 1, y, w - 2, h);
   }],
+  note: [64, 192, 64, 64, (c, x, y, w, h) => {
+    const cx = x + w / 2, cy = y + h / 2;
+    radial(c, cx, cy, 26, [[0, 'rgba(255,255,255,0.4)'], [1, 'rgba(255,255,255,0)']]);
+    c.fillStyle = '#fff';
+    c.save();
+    c.translate(cx - 6, cy + 10);
+    c.rotate(-0.35);
+    c.beginPath();
+    c.ellipse(0, 0, 11, 7.5, 0, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+    c.lineWidth = 3.5;
+    c.strokeStyle = '#fff';
+    c.beginPath();
+    c.moveTo(cx + 4, cy + 8);
+    c.lineTo(cx + 4, cy - 18);
+    c.quadraticCurveTo(cx + 12, cy - 14, cx + 18, cy - 6);
+    c.stroke();
+  }],
+  noteDouble: [128, 192, 64, 64, (c, x, y, w, h) => {
+    const cx = x + w / 2, cy = y + h / 2;
+    radial(c, cx, cy, 28, [[0, 'rgba(255,255,255,0.4)'], [1, 'rgba(255,255,255,0)']]);
+    c.fillStyle = '#fff';
+    for (const ox of [-10, 10]) {
+      c.save();
+      c.translate(cx + ox, cy + 10);
+      c.rotate(-0.35);
+      c.beginPath();
+      c.ellipse(0, 0, 8.5, 6, 0, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+    }
+    c.lineWidth = 3;
+    c.strokeStyle = '#fff';
+    c.beginPath();
+    c.moveTo(cx - 2, cy + 8);
+    c.lineTo(cx - 2, cy - 16);
+    c.lineTo(cx + 18, cy - 12);
+    c.lineTo(cx + 18, cy + 12);
+    c.stroke();
+    c.lineWidth = 5;
+    c.beginPath();
+    c.moveTo(cx - 3, cy - 15);
+    c.lineTo(cx + 19, cy - 11);
+    c.stroke();
+  }],
+  staffBeam: [192, 192, 128, 32, (c, x, y, w, h) => {
+    const cy = y + h / 2;
+    const v = c.createLinearGradient(0, y, 0, y + h);
+    v.addColorStop(0, 'rgba(255,255,255,0)');
+    v.addColorStop(0.5, 'rgba(255,255,255,0.85)');
+    v.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = v;
+    c.fillRect(x + 1, y + 2, w - 10, h - 4);
+    c.strokeStyle = 'rgba(255,255,255,0.9)';
+    c.lineWidth = 1.2;
+    for (let i = -2; i <= 2; i++) {
+      const ly = cy + i * 4.5;
+      c.beginPath();
+      c.moveTo(x + 4, ly);
+      c.lineTo(x + w - 12, ly);
+      c.stroke();
+    }
+    c.fillStyle = '#fff';
+    c.fillRect(x + 1, cy - 1.5, w - 8, 3);
+    fadeTail(c, x, y, w, h, 0.45);
+    radial(c, x + w - 10, cy, 10, [[0, 'rgba(255,255,255,1)'], [0.5, 'rgba(255,255,255,0.6)'], [1, 'rgba(255,255,255,0)']]);
+  }],
+  musicRing: [320, 192, 128, 128, (c, x, y, w) => {
+    const cx = x + w / 2, cy = y + w / 2;
+    const g = c.createRadialGradient(cx, cy, w * 0.32, cx, cy, w * 0.48);
+    g.addColorStop(0, 'rgba(255,255,255,0)');
+    g.addColorStop(0.5, 'rgba(255,255,255,1)');
+    g.addColorStop(0.8, 'rgba(255,255,255,0.4)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g;
+    c.fillRect(x, y, w, w);
+    c.strokeStyle = '#fff';
+    c.lineWidth = 3;
+    c.beginPath();
+    c.arc(cx, cy, 48, 0, Math.PI * 2);
+    c.stroke();
+    for (let k = 0; k < 8; k++) {
+      const a = (k * Math.PI) / 4;
+      c.fillStyle = '#fff';
+      c.beginPath();
+      c.arc(cx + Math.cos(a) * 48, cy + Math.sin(a) * 48, 3.5, 0, Math.PI * 2);
+      c.fill();
+    }
+  }],
+  spotlight: [448, 192, 128, 128, (c, x, y, w) => {
+    const cx = x + w / 2, cy = y + w / 2;
+    radial(c, cx, cy, w * 0.48, [[0, 'rgba(255,255,255,0.7)'], [0.4, 'rgba(255,255,255,0.3)'], [1, 'rgba(255,255,255,0)']]);
+    c.strokeStyle = 'rgba(255,255,255,0.85)';
+    c.lineWidth = 2.5;
+    c.beginPath();
+    c.arc(cx, cy, 52, 0, Math.PI * 2);
+    c.stroke();
+  }],
 };
 
 function radial(c, cx, cy, r, stops) {
@@ -920,7 +1019,7 @@ export function fxAtlas() {
   return _fx;
 }
 
-export const STATUS_KEYS = ['stun', 'freeze', 'cold', 'stealth', 'shield', 'fragile', 'sleep', 'invuln', 'silence', 'slow', 'bind', 'fear', 'weaken', 'levitate', 'taunt', 'burn', 'neural', 'necrosis', 'blocked', 'skill', 'doll', 'healFree', 'refraction'];
+export const STATUS_KEYS = ['stun', 'freeze', 'cold', 'stealth', 'shield', 'fragile', 'sleep', 'invuln', 'silence', 'slow', 'bind', 'fear', 'weaken', 'levitate', 'taunt', 'burn', 'neural', 'necrosis', 'blocked', 'skill', 'doll', 'healFree', 'refraction', 'fever'];
 
 function drawStatusIcon(c, key, x, y, s) {
   const cx = x + s / 2, cy = y + s / 2;
@@ -930,6 +1029,15 @@ function drawStatusIcon(c, key, x, y, s) {
   };
   c.lineCap = 'round'; c.lineJoin = 'round';
   switch (key) {
+    case 'fever': {
+      disc('rgba(60,10,40,0.92)', '#ff4bb8');
+      c.fillStyle = '#ff4bb8';
+      c.font = 'bold 16px sans-serif';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText('♪', cx, cy + 1);
+      break;
+    }
     case 'stun': {
       disc('rgba(40,32,8,0.92)', '#ffd84a');
       c.fillStyle = '#ffd84a';
