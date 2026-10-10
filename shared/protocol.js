@@ -447,6 +447,7 @@ export const C2S = {
   // the push m.unitStats { seq, round, units: [unitStatsEntry] }; `seq` is echoed so the client keeps the newest answer
   'g.unitStats': { seq: (v) => isInt(v, 0, 2 ** 31), $optional: ['seq'] },
   'g.leave': {},
+  'g.cheat': { code: isStr, text: isStr, $optional: ['code', 'text'] },
 
   // client-side combat (DESIGN §14): the authoritative client of a field reports its battle; a 联防 field adds
   // `left` = { [leakerId]: its enemies still standing (unspawned, alive, or through again) } (server/sim/spec.js

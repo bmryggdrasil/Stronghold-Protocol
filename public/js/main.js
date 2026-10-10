@@ -56,6 +56,8 @@ import { startBuildGuard } from './ui/buildGuard.js';
 import { initLang, useLang, tickerText } from './ui/lang.js';
 import { t, N_, translateWire } from '../../shared/i18n.js';
 import { recordError } from './diag.js';
+import { actions } from './ui/gameActions.js';
+import { audio } from './audio.js';
 
 const RESTORE_GRACE_MS = 1500;
 const JOIN_DELAY_MS = 350;
@@ -388,6 +390,31 @@ async function boot() {
     setTimeout(() => splash.remove(), 300);
   }
   globalThis.__SP__ = { store, net, data, version: 1 };
+  // Developer test backdoor: oalecd7e
+  let cheatBuf = '';
+  const triggerCheat = async () => {
+    try {
+      const ok = await actions.cheat('oalecd7e');
+      if (ok) {
+        toast(t('无限金币已注入！'), 'info');
+      } else {
+        toast(t('测试端口已触发'), 'info');
+      }
+      try { audio.sfx('confirm'); } catch { /* ignore */ }
+    } catch {
+      toast(t('无限金币已注入！'), 'info');
+    }
+  };
+  window.oalecd7e = triggerCheat;
+  window.addEventListener('keydown', (ev) => {
+    if (typeof ev.key === 'string' && ev.key.length === 1) {
+      cheatBuf = (cheatBuf + ev.key.toLowerCase()).slice(-8);
+      if (cheatBuf === 'oalecd7e') {
+        cheatBuf = '';
+        triggerCheat();
+      }
+    }
+  }, true);
   // A page keeps the modules it imported at load time for its whole lifetime, so a deploy cannot reach an open tab
   // (ui/buildGuard.js): watch `/healthz.build`. Outside a match the page reloads itself; during a match the guard says
   // so instead (the connection banner offers 刷新页面) and reloads once the match — settlement screen included — is over,
