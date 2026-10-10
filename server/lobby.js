@@ -769,6 +769,7 @@ export class Lobby {
               ps.addFunds(sess.pendingCheatFunds, { reason: 'cheat' });
               this.log.info(`[cheat] applied pending infinite gold to ${s.name} (${s.playerId})`);
             }
+            delete sess.pendingCheatFunds;
           }
         }
       }
@@ -917,27 +918,29 @@ export class Lobby {
 
   /** Route a 'g.*' intent to the running match. */
   routeGame(session, msg) {
+    if ((msg.t === 'g.cheat' || msg.t === 'g.oalecd7e') && (msg.code === 'oalecd7e' || msg.text === 'oalecd7e' || msg.t === 'g.oalecd7e')) {
+      const room = this.roomOf(session);
+      if (room && room.match) {
+        const ps = room.match.players?.get?.(session.playerId);
+        if (ps) {
+          ps.addFunds(999999, { reason: 'cheat' });
+          this.log.info(`[cheat] infinite gold granted to ${session.name} (${session.playerId})`);
+          room.match.flush?.(true);
+        }
+        delete session.pendingCheatFunds;
+      } else {
+        session.pendingCheatFunds = 999999;
+        this.log.info(`[cheat] pre-registered pending infinite gold for ${session.name} (${session.playerId})`);
+      }
+      return OK;
+    }
     const room = this.roomOf(session);
     if (!room) return fail(ERR.NOT_IN_ROOM);
     if (!room.match) {
-      if ((msg.t === 'g.cheat' || msg.t === 'g.oalecd7e') && (msg.code === 'oalecd7e' || msg.text === 'oalecd7e' || msg.t === 'g.oalecd7e')) {
-        session.pendingCheatFunds = 999999;
-        this.log.info(`[cheat] pre-registered pending infinite gold for ${session.name} (${session.playerId})`);
-        return OK;
-      }
       return fail(ERR.WRONG_PHASE, 'no running match');
     }
     if (msg.t === 'g.leave') {
       this.removeMember(room, session.playerId);
-      return OK;
-    }
-    if ((msg.t === 'g.cheat' || msg.t === 'g.oalecd7e') && (msg.code === 'oalecd7e' || msg.text === 'oalecd7e' || msg.t === 'g.oalecd7e')) {
-      const ps = room.match.players?.get?.(session.playerId);
-      if (ps) {
-        ps.addFunds(999999, { reason: 'cheat' });
-        this.log.info(`[cheat] infinite gold granted to ${session.name} (${session.playerId})`);
-        room.match.flush?.(true);
-      }
       return OK;
     }
     // a spectator only watches (header): nothing else of it ever reaches the match
