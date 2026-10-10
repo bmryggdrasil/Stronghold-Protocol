@@ -175,7 +175,7 @@ Each domain file `server/sim/content/{tokens,bonds,garrisons,items,bands,enemies
   克莱门莎 S2 removes dead, hidden, self-bound / teleport-immune and unreachable passengers before checking new
   boarding in the same tick. Each released passenger returns its current weight to the cabin's remaining budget
   and frees its slot (§28.27); neither corpses nor failed carries reserve capacity.
-  丰川祥子的音符由其套件维护自由飞行、周期索敌、转向追踪和命中；S3 钢琴物理音符锁定范围内最高法抗，风琴法术音符锁定最高防御（PRTS 丰川祥子；§28.28）。
+  丰川祥子的音符由其套件维护自由飞行、周期索敌、转向追踪和命中；无目标自由音符不触发攻击动作，常态发射时获得攻击回复技力；S3 空范围时每轮发射 2 颗物理与 2 颗法术自由音符并保持技能待机，音符可自行索敌；LOR-Y 模组在当前攻击范围有至少 2 名可选敌人时给予 +12 攻速；S3 钢琴物理音符锁定范围内最高法抗，风琴法术音符锁定最高防御（PRTS 丰川祥子；§28.28–§28.29）。
 - bonds: 23 (battle + meta), exact per-layer formulas from research 02.
 - garrisons: 43 effect keys (IN_BATTLE via hooks; SERVER_* via meta registry).
   远牙's granted `garrison_108_a/b` additionally gains on both directions of `dollSwap`, sharing its deployment

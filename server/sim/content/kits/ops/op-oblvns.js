@@ -20,6 +20,7 @@ const S2_BUFF = 'skill:oblvns:dance';
 const S3_STAGE_BUFF = 'skill:oblvns:echo';
 const ASPD_AURA_KEY = 'talent:oblvns:courage';
 const T1_PEN_KEY = 'talent:oblvns:notes:pen';
+const MODULE_ASPD_KEY = 'module:oblvns:crowd';
 const NOTE_PI = 3.141592653589793;
 const NOTE_TAU = 6.283185307179586;
 const NOTE_COLLISION_RADIUS = 0.24; // [ASSUMED] PRTS describes collision only for S2 piano's 0.8 radius.
@@ -55,6 +56,7 @@ function noteDirection(unit, degrees) {
 function emitNote(battle, unit, {
   target = null, visual = 'sonicNote', type = 'arts', scale = 1, isSkill = false,
   tag = 'oblvns:note', motion = 'normal', angle = null, rangedScale = 0.8, impactFx = false, announce = false,
+  recoverSpOnLaunch = false,
 }) {
   const cfg = NOTE_MOTION[motion] || NOTE_MOTION.normal;
   const targetable = noteCanTarget(unit, target) ? target : null;
@@ -83,6 +85,7 @@ function emitNote(battle, unit, {
     isSkill, tag, motion, cfg: noteCfg, rangeKeys: new Set(unit.rangeKeys || []),
   };
   notes.push(note);
+  if (recoverSpOnLaunch && unit.skill?.spType === 'attack') unit.skill.gainSp(1, 'attack');
   if (announce) battle._ev(['atk', unit.id, targetable?.id ?? null, 'oblvnsSilent']);
   battle.fx('oblvnsNote', {
     x: note.x, y: note.y, id: unit.id, phase: 'launch', noteId: note.id, visual,
@@ -277,6 +280,7 @@ export default {
     const defPenPerNote = num(t0.def_penetrate_ratio, 0.03);
     const resPenPerNote = num(t0.magic_resist_penetrate_ratio, 0.02);
     const maxNoteStacks = Math.max(1, Math.floor(num(t0.max_cnt, 10)));
+    const moduleAspd = num(tb.attack_speed, 12);
 
     // T2 values (aspd aura: 16 pot, 12 base; fever gain: 3)
     const aspdAura = num(t1.attack_speed, 16);
@@ -409,7 +413,16 @@ export default {
               tickNotes(battle, unit, dt);
               if (!up(unit)) {
                 for (const a of battle.allyUnits) if (a.ownerId === unit.ownerId && isMujica(a)) battle.removeBuff(a, T1_PEN_KEY);
+                battle.removeBuff(unit, MODULE_ASPD_KEY);
                 return;
+              }
+              const moduleAspdBuff = unit.findBuff(MODULE_ASPD_KEY);
+              const hasModuleCrowd = unit.def?.loadout?.moduleId === 'uniequip_002_oblvns' && moduleAspd > 0
+                && battle.enemiesInKeys(unit.rangeKeys, unit, unit.profile).length >= 2;
+              if (hasModuleCrowd && !moduleAspdBuff) {
+                battle.addBuff(unit, { key: MODULE_ASPD_KEY, mods: { aspd: moduleAspd }, tags: ['module'] });
+              } else if (!hasModuleCrowd && moduleAspdBuff) {
+                battle.removeBuff(unit, MODULE_ASPD_KEY);
               }
               const notes = unit.mem.oblvnsNotes || [];
 
@@ -431,21 +444,33 @@ export default {
                 }
               }
 
-              // Continuous performance: if no enemies in range and atkCd <= 0, play notes forward!
+              // Free notes drift without an attack animation; S3 stays in its skill-idle pose until it has a target.
               if (unit.atkCd <= 0 && unit.canAct && !unit.s.flags.disarm && !unit.s.flags.stun && !unit.s.flags.sleep) {
                 const enemies = battle.enemiesInKeys(unit.rangeKeys, unit, unit.profile);
+                const s3 = unit.skill?.active && unit.skill.id === S3;
                 if (!enemies.length) {
                   unit.atkCd = unit.s.interval;
-                  const s2 = unit.skill?.active && unit.skill.id === S2;
-                  const mode = s2 ? unit.mem.oblvnsMode : null;
-                  emitNote(battle, unit, {
-                    target: null,
-                    visual: mode === 'organ' ? 'organNote' : mode === 'piano' ? 'pianoBeam' : 'sonicNote',
-                    type: mode === 'organ' ? 'arts' : 'phys',
-                    isSkill: !!s2,
-                    tag: s2 ? 'oblvns:s2' : 'oblvns:normal',
-                    motion: mode || 'normal', rangedScale, announce: true,
-                  });
+                  if (s3) {
+                    for (let i = 0; i < 2; i++) emitNote(battle, unit, {
+                      visual: 'pianoBeam', type: 'phys', scale: s3AtkScale, isSkill: true,
+                      tag: 'oblvns:s3:piano', motion: 's3', rangedScale, impactFx: i === 0,
+                    });
+                    for (let i = 0; i < 2; i++) emitNote(battle, unit, {
+                      visual: 'organNote', type: 'arts', scale: s3AtkScale, isSkill: true,
+                      tag: 'oblvns:s3:organ', motion: 's3', rangedScale, impactFx: i === 0,
+                    });
+                  } else {
+                    const s2 = unit.skill?.active && unit.skill.id === S2;
+                    const mode = s2 ? unit.mem.oblvnsMode : null;
+                    emitNote(battle, unit, {
+                      target: null,
+                      visual: mode === 'organ' ? 'organNote' : mode === 'piano' ? 'pianoBeam' : 'sonicNote',
+                      type: mode === 'organ' ? 'arts' : 'phys',
+                      isSkill: !!s2,
+                      tag: s2 ? 'oblvns:s2' : 'oblvns:normal',
+                      motion: mode || 'normal', rangedScale, recoverSpOnLaunch: true,
+                    });
+                  }
                 }
               }
             });

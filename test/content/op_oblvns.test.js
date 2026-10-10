@@ -13,15 +13,15 @@ const ENEMIES = {
   enemy_mid: enemyRec({ key: 'enemy_mid', hp: 1e9, speed: 0, def: 100, res: 35 }),
 };
 
-function field(skillIndex) {
+function field(skillIndex, moduleId = null) {
   const h = makeBattle({
     defs: { enemies: ENEMIES },
     timeLimit: 900,
     autoFinish: false,
     flags: { dpPerSec: 0 },
-    hooks: ['damaged', 'skillStart'],
+    hooks: ['damaged', 'skillStart', 'spGain'],
     captureNoisy: true,
-    units: [{ uid: 1, diy: { slot: SLOT, charId: OB, skillIndex }, elite: true, row: 10, col: 3 }],
+    units: [{ uid: 1, diy: { slot: SLOT, charId: OB, skillIndex, ...(moduleId ? { uniEquipId: moduleId } : {}) }, elite: true, row: 10, col: 3 }],
   });
   h.step();
   return { h, u: h.unit(1) };
@@ -54,14 +54,62 @@ test('an ordinary note launched with a target uses the straight target-present f
   const { h, u } = field(1);
   const e = h.spawn('enemy_note', { pos: [8, 4] });
   h.b.addBuff(e, { key: 'test:stay', flags: { noMove: true } });
+  h.b.addBuff(e, { key: 'test:dodge', mods: { dodgePhys: 1 } });
+  u.skill.sp = 0;
   h.step();
   assert.equal(h.b.forceAttack(u), true);
+  assert.equal(u.skill.sp, 1, 'attack SP is granted before this projectile reaches its guaranteed dodge');
 
   const note = u.mem.oblvnsNotes.find((n) => n.tag === 'oblvns:normal' && n.target === e);
   assert.ok(note, 'the ordinary attack captured its in-range target');
   assert.equal(note.cfg.freeSpeed, 2);
   assert.equal(note.cfg.turn, 1 / 6);
   assert.equal(note.cfg.sine, 0);
+  done(h);
+});
+
+test('a free note grants attack SP on launch without starting an attack animation', () => {
+  const { h, u } = field(1);
+  u.skill.sp = 0;
+  u.atkCd = 0;
+  h.events.length = 0;
+  const notesBefore = u.mem.oblvnsNotes.length;
+
+  h.step();
+
+  assert.equal(u.mem.oblvnsNotes.length, notesBefore + 1);
+  assert.equal(u.skill.sp, 1);
+  assert.ok(h.hooksOf('spGain').some((c) => c.unit === u && c.reason === 'attack'));
+  assert.equal(h.eventsOf('atk').some((e) => e[1] === u.id), false);
+  done(h);
+});
+
+test('S3 with no enemies stays in skill idle and emits an untargeted quartet that can reacquire', () => {
+  const { h, u } = field(2);
+  for (const note of u.mem.oblvnsNotes) note.alive = false;
+  u.mem.oblvnsNotes = [];
+  u.atkCd = 0;
+  h.events.length = 0;
+  assert.equal(u.skill.activate('test', { free: true }), true);
+  h.step();
+
+  assert.deepEqual(u.mem.oblvnsNotes.map((n) => [n.tag, n.type, n.scale, n.target]), [
+    ['oblvns:s3:piano', 'phys', 1.8, null],
+    ['oblvns:s3:piano', 'phys', 1.8, null],
+    ['oblvns:s3:organ', 'arts', 1.8, null],
+    ['oblvns:s3:organ', 'arts', 1.8, null],
+  ]);
+  assert.ok(h.eventsOf('skill').some((e) => e[1] === u.id && e[2] === 1), 'S3 remains active for the skill-idle pose');
+  assert.equal(h.eventsOf('atk').some((e) => e[1] === u.id), false);
+
+  const note = u.mem.oblvnsNotes[0];
+  const e = h.spawn('enemy_note', { pos: [10, 7] });
+  e.x = note.x + 0.45;
+  e.y = note.y;
+  u.atkCd = 100;
+  h.run(1.2);
+  assert.equal(note.mode, 'homing');
+  assert.equal(note.target, e);
   done(h);
 });
 
@@ -134,6 +182,34 @@ test('S3 launches two 1.8x physical notes at highest RES and two 1.8x Arts notes
   const hits = h.hooksOf('damaged').filter((c) => (c.dmg.tags || []).some((tag) => tag.startsWith('oblvns:s3:')));
   assert.ok(hits.some((c) => c.target === highRes && c.dmg.tags.includes('oblvns:s3:piano')), 'piano hits the highest-RES enemy');
   assert.ok(hits.some((c) => c.target === highDef && c.dmg.tags.includes('oblvns:s3:organ')), 'organ hits the highest-DEF enemy');
+  done(h);
+});
+
+test('LOR-Y grants +12 ASPD only while at least two selectable enemies are in the current range', () => {
+  const { h, u } = field(2, 'uniequip_002_oblvns');
+  const baseAspd = u.s.aspd;
+  assert.equal(u.skill.activate('test', { free: true }), true);
+  u.atkCd = 0;
+  const tiles = [...u.rangeKeys]
+    .map((key) => [Math.floor(key / 21), key % 21])
+    .filter(([r, c]) => r !== u.tileR || c !== u.tileC);
+  const [aTile, bTile] = tiles;
+  const a = h.spawn('enemy_note', { pos: aTile });
+  h.b.addBuff(a, { key: `test:stay:${a.id}`, flags: { noMove: true } });
+  h.step();
+  assert.equal(h.b.enemiesInKeys(u.rangeKeys, u, u.profile).length, 1);
+  assert.equal(u.s.aspd, baseAspd, 'one selectable enemy does not meet the module condition');
+  assert.ok(h.eventsOf('atk').some((e) => e[1] === u.id), 'a target starts the attack action');
+
+  const b = h.spawn('enemy_note', { pos: bTile });
+  h.b.addBuff(b, { key: `test:stay:${b.id}`, flags: { noMove: true } });
+  h.step();
+  assert.equal(h.b.enemiesInKeys(u.rangeKeys, u, u.profile).length, 2);
+  assert.equal(u.s.aspd, baseAspd + 12);
+
+  b.alive = false;
+  h.step();
+  assert.equal(u.s.aspd, baseAspd);
   done(h);
 });
 
