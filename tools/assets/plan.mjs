@@ -208,14 +208,24 @@ function walkKeys(node, add) {
  * @param {{ subProfessionId?: string|null, nationId?: string|null, skills?: Array<{ index: number, skillId: string, iconId?: string|null }> }} x
  */
 export function patternOperator(id, x = {}) {
+  const skinId = typeof x.skinId === 'string' ? x.skinId : null;
+  const skinAssetId = skinId ? skinId.replace('@', '_') : id; // official skin_table avatarId / portraitId convention
+  const modelId = skinId ? skinAssetId.replace(/[^A-Za-z0-9._-]/g, '_') : id; // fexli folder stem; '#' is '_'
   const sp = (side) => {
-    const b = `${RAW.fexli}spine/${id}/${id}/${side}/${id}`;
+    const b = `${RAW.fexli}spine/${id}/${modelId}/${side}/${modelId}`;
     return { skel: `${b}.skel`, atlas: `${b}.atlas`, png: `${b}.png` };
   };
+  const art = (dir, name) => (skinId ? joinUrl(RAW.yuanyan, `${dir}/${skinAssetId}.png`) : `${RAW.yuanyan}${dir}/${name}.png`);
   return {
     name: x.name ?? null, subProfessionId: x.subProfessionId ?? null, nationId: x.nationId ?? null, chess: [],
-    avatar: { e0e1: { url: `${RAW.yuanyan}avatar/${id}.png` }, e2: { url: `${RAW.yuanyan}avatar/${id}_2.png` } },
-    portrait: { e0e1: { url: `${RAW.yuanyan}portrait/${id}_1.png` }, e2: { url: `${RAW.yuanyan}portrait/${id}_2.png` } },
+    avatar: {
+      e0e1: { url: art('avatar', id) },
+      e2: { url: skinId ? art('avatar', id) : `${RAW.yuanyan}avatar/${id}_2.png` },
+    },
+    portrait: {
+      e0e1: { url: skinId ? art('portrait', id) : `${RAW.yuanyan}portrait/${id}_1.png` },
+      e2: { url: skinId ? art('portrait', id) : `${RAW.yuanyan}portrait/${id}_2.png` },
+    },
     skills: (x.skills || []).map((s) => ({
       index: s.index, skillId: s.skillId, iconId: s.iconId || s.skillId,
       icon: { url: `${RAW.yuanyan}skill/skill_icon_${encodeURIComponent(s.iconId || s.skillId)}.png` },
@@ -223,6 +233,45 @@ export function patternOperator(id, x = {}) {
     battleSpine: { front: sp('Front'), back: sp('Back'), note: null },
     subProfessionIcon: x.subProfessionId ? joinUrl(RAW.aa2, `arts/ui/subprofessionicon/sub_${x.subProfessionId}_icon.png`) : null,
   };
+}
+
+/**
+ * Restrict an already-built plan to one data/backups.json operator. Used by fetch-assets `--only-operator` to add an
+ * approved pick's official costume/model without requiring every git-ignored asset to be downloaded on this checkout.
+ * @param {{template:any,models:Map<string,any>,notes:string[]}} plan
+ * @param {string} charId
+ * @param {string|null} subProfessionId
+ * @returns {{template:any,models:Map<string,any>,notes:string[]}}
+ */
+export function onlyOperatorPlan(plan, charId, subProfessionId = null) {
+  const t = plan?.template;
+  const rec = t?.chars?.[charId];
+  if (!rec) throw new Error(`operator ${charId} has no asset plan`);
+  const short = charId.replace(/^char_\d+_/, '');
+  const skillIds = new Set(Object.keys(t.skillsById || {}).filter((id) => id.startsWith(`skchr_${short}_`)));
+  const skillIcons = new Set([...skillIds].map((id) => t.skillsById[id]).filter(Boolean));
+  const sub = t.prof?.sub || {};
+  const voice = t.audio?.voice?.[charId];
+  const voiceJp = t.audio?.voiceJp?.[charId];
+  const sfx = t.audio?.sfx?.units?.[charId];
+  const template = {
+    ...t,
+    chars: { [charId]: rec },
+    skills: Object.fromEntries([...skillIcons].filter((id) => t.skills?.[id]).map((id) => [id, t.skills[id]])),
+    skillsById: Object.fromEntries([...skillIds].filter((id) => t.skillsById?.[id]).map((id) => [id, t.skillsById[id]])),
+    modules: {},
+    prof: { sub: subProfessionId && sub[subProfessionId] ? { [subProfessionId]: sub[subProfessionId] } : {} },
+    enemies: {}, tokens: {}, bonds: {}, items: {}, bands: {}, ui: {},
+    audio: {
+      ...(sfx ? { sfx: { units: { [charId]: sfx } } } : null),
+      ...(voice ? { voice: { [charId]: voice } } : null),
+      ...(voiceJp ? { voiceJp: { [charId]: voiceJp } } : null),
+    },
+    bossBgm: {},
+  };
+  const prefix = `op:${charId}:`;
+  const models = new Map([...plan.models].filter(([key]) => key.startsWith(prefix)));
+  return { template, models, notes: plan.notes.filter((n) => n.includes(charId)) };
 }
 
 // ---------------------------------------------------------------------------

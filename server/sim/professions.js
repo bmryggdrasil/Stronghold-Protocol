@@ -259,11 +259,12 @@ const installDollkeeper = (battle, unit) => {
       flags: { noSp: true, ...(unit.profile.dollNoAttack ? { disarm: true, silence: true } : null) },
     });
     battle.releaseBlocked(unit);
-    unit.form = 'doll';
+    const viewForm = typeof unit.profile.dollForm === 'function' ? unit.profile.dollForm(unit) : null;
+    unit.form = viewForm || 'doll';
     unit.markDirty();
     unit.hp = unit.s.maxHp;
     // `dur`: until the switch back (the client times the 替身's closing clip with it)
-    battle.fx('substitute', at({ form: 'doll', dur }));
+    battle.fx('substitute', at({ form: unit.form, dur }));
     // `dollSwap` { unit, form }: a switch started — to the 替身 ('doll') or back to the 本体 (null); not fired when she is
     // knocked out as the 替身 (不屈 rolls on both switches: PRTS 盟约记录 "切换<替身>与<本体>时")
     if (battle.hasHook('dollSwap')) battle.emit('dollSwap', { unit, form: 'doll' });

@@ -140,6 +140,8 @@ export const PREFAB_SPINE_ROLES = Object.freeze({
   enemy_1116_liprr_2: PRISONER_GREY_3,
   // operators by character id: both the front and the back model
   char_337_utage: { skill: UTAGE_S2, skills: { 0: UTAGE_S1, 1: UTAGE_S2 } },
+  // The base body has no Die clip; Doll_Skill_1_Die belongs only to Orpheus and is selected by render/units.js FORMS.
+  char_4217_makoto: { die: null },
 });
 
 /**

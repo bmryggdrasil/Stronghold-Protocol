@@ -24,6 +24,10 @@ export const FX_KINDS = Object.freeze({
   sonicStream: { a: 'volley', c: 0xff66cc },
   burst: { a: 'element', c: 0xd0a0ff },
   musicBurst: { a: 'crystal', c: 0xff315f, r: 1.8 },
+  // 结城理 P3R costume / Persona transitions: procedural battle effects, no extracted game particles.
+  makotoPersona: { a: 'makotoPersona', c: 0x6e7be8 }, makotoAllOut: { a: 'makotoAllOut', c: 0xf4e8c6, r: 1.5 },
+  makotoAura: { a: 'healAoe', c: 0xffc56e, r: 1.5 }, makotoFear: { a: 'reticle', c: 0x9f78ed },
+  makotoStagger: { a: 'wave', c: 0x748bea, r: 1.5 }, makotoExecute: { a: 'strike', c: 0xe7ddff },
   // The notes are rendered from their deterministic sim positions / target changes, not as a generic point effect.
   oblvnsNote: { a: 'none', c: 0xff66cc },
   feverStart: { a: 'buff', c: 0xff4bb8, r: 2.5 },
@@ -118,6 +122,10 @@ export function fxSpec(kind, extra = {}) {
   const k = typeof kind === 'string' ? kind : '';
   if (k === 'phase' && SILENT_PHASES.has(extra && extra.kind)) return { a: 'none', c: 0xffffff };
   let spec = FX_KINDS[k];
+  if (k === 'makotoPersona') {
+    const c = extra?.persona === 'orpheus' ? 0xffc56e : extra?.persona === 'body' ? 0xe6eaf7 : 0x6e7be8;
+    return { ...spec, c };
+  }
   if (!spec) {
     const g = FX_GUESS.find(([re]) => re.test(k));
     spec = g ? { ...FX_KINDS[{ heal: 'heal', shield: 'shield', summon: 'summon', blast: 'aoe', zone: 'zone', buff: 'buff', reticle: 'lock', blink: 'blink', vanish: 'disappear', move: 'displace', wave: 'pulse' }[g[1]]] } : { a: 'generic', c: 0xfff2d0 };

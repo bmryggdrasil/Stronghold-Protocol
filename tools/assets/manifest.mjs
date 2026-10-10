@@ -148,6 +148,34 @@ export function resolveTemplate(template, { root, spine, sourceOf = () => undefi
 }
 
 /**
+ * Overlay a resolved single-operator asset plan onto the existing generated manifest, preserving every unrelated entry.
+ * This is the manifest counterpart of fetch-assets `--only-operator`.
+ * @param {any} current
+ * @param {any} partial
+ * @param {string} charId
+ */
+export function mergeOperatorManifest(current, partial, charId) {
+  if (!current || typeof current !== 'object' || !partial?.chars?.[charId]) throw new Error(`cannot merge assets for ${charId}`);
+  const out = JSON.parse(JSON.stringify(current));
+  for (const key of ['version', 'hash', 'generator', 'stats']) delete out[key];
+  const merge = (a, b) => Object.assign(a || {}, b || {});
+  const oldSfx = out.audio?.sfx || {};
+  const oldVoice = out.audio?.voice || {};
+  const oldVoiceJp = out.audio?.voiceJp || {};
+  out.chars = { ...(out.chars || {}), [charId]: partial.chars[charId] };
+  out.skills = merge(out.skills, partial.skills);
+  out.skillsById = merge(out.skillsById, partial.skillsById);
+  out.modules = merge(out.modules, partial.modules);
+  out.prof = { ...(out.prof || {}), sub: merge(out.prof?.sub, partial.prof?.sub) };
+  out.audio = { ...(out.audio || {}), ...(partial.audio || {}) };
+  if (partial.audio?.sfx) out.audio.sfx = { ...oldSfx, ...partial.audio.sfx,
+    units: merge(oldSfx.units, partial.audio.sfx.units) };
+  if (partial.audio?.voice) out.audio.voice = merge(oldVoice, partial.audio.voice);
+  if (partial.audio?.voiceJp) out.audio.voiceJp = merge(oldVoiceJp, partial.audio.voiceJp);
+  return out;
+}
+
+/**
  * Total size in bytes of files under root.
  * @param {string} root
  * @param {Iterable<string>} rels

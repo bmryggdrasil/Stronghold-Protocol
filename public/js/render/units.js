@@ -265,6 +265,8 @@ export const WOLF_PIPS = Object.freeze({ size: 0.1, min: 5, max: 9, gap: 2, pad:
  *   clip (`end`) is timed from the 重生's `dur` (the 'telegraph' fx) to end with it, so the second form walks and
  *   attacks on its own clips at once (a view that missed the timing — built mid-重生 — skips the closing clip);
  * - 守墓石像 (forms 'stone' → 'fly'): the statue on Sleep [ASSUMED by name], then the flyer's *_2 clips.
+ * - 结城理's P3R skin: the doll form is selected by the equipped skill (Orpheus / Thanatos / Thanatos·改); S3's
+ *   Thanatos → Orpheus transition plays ChangeBegin and ChangeEnd, and its All-Out Attack closes on the body.
  * - the 孤岛风云 prisoners (sim content/enemies/archetypes.js prisoner: forms 'warning' → 'liberty'), as their official
  *   battle prefabs' modes: confined on the manifest's clips (the grey collar light: 普通囚犯 / 老练囚犯 Idle3 … through
  *   tools/assets/spine.mjs PREFAB_SPINE_ROLES, 强壮囚犯 Idle …, 拳师囚犯 / 重犯 / 传奇重犯 *_grey), mode R — the warning
@@ -320,7 +322,32 @@ const PRISONER_COLOURED = prisoner('_orange', '_red');
 const dollRoles = (idle, die, attack = null) => Object.freeze({
   idle, deploy: idle, die, attack: attack ? Object.freeze({ begin: null, loop: attack, end: null }) : null, attackDown: null, skill: null,
 });
+const makotoRoles = (idle, die, attack, stun) => Object.freeze({
+  idle, deploy: idle, die, attack: attack ? loop(attack, 'attackAny') : null, attackDown: null, skill: null,
+  stun: loop(stun),
+});
+const MAKOTO_ORPHEUS = makotoRoles('Doll_Skill_1_Idle', 'Doll_Skill_1_Die', 'Doll_Skill_1_Attack', 'Doll_Skill_1_Stun');
+const MAKOTO_THANATOS = makotoRoles('Doll_Skill_2_Loop', 'Doll_Skill_2_Die', 'Doll_Skill_2_Loop', 'Doll_Skill_2_Stun');
+const MAKOTO_THANATOS_S3 = makotoRoles('Doll_Skill_3_P1_Idle', 'Doll_Skill_3_P2_Die', 'Doll_Skill_3_P1_Attack_A', 'Doll_Skill_3_P1_Stun');
+const MAKOTO_ORPHEUS_S3 = makotoRoles('Doll_Skill_3_P2_Loop', 'Doll_Skill_3_P2_Die', 'Doll_Skill_3_P2_Loop', 'Doll_Skill_3_P2_Stun');
+const MAKOTO_ORPHEUS_S3_MOD = Object.freeze({ ...MAKOTO_ORPHEUS_S3, attack: null });
 export const FORMS = Object.freeze({
+  char_4217_makoto: Object.freeze({
+    makotoS1Orpheus: Object.freeze({ change: 'Doll_Skill_1_SwitchIn', leave: 'Doll_Skill_1_SwitchOut', roles: MAKOTO_ORPHEUS }),
+    makotoS2Thanatos: Object.freeze({ change: 'Doll_Skill_2_SwitchIn', leave: 'Doll_Skill_2_SwitchOut', roles: MAKOTO_THANATOS }),
+    makotoS3Thanatos: Object.freeze({ change: 'Doll_Skill_3_P1_SwitchIn', leave: 'Doll_Skill_3_P1_SwitchOut', roles: MAKOTO_THANATOS_S3 }),
+    makotoS3ThanatosToOrpheus: Object.freeze({
+      change: 'Doll_Skill_3_P1toP2_ChangeBegin', end: 'Doll_Skill_3_P1toP2_ChangeEnd',
+      next: 'makotoS3Orpheus', leave: 'Doll_Skill_3_P2_SwitchOut', roles: MAKOTO_THANATOS_S3,
+    }),
+    makotoS3Orpheus: Object.freeze({ roles: MAKOTO_ORPHEUS_S3, leave: 'Doll_Skill_3_P2_SwitchOut' }),
+    makotoS3OrpheusModified: Object.freeze({ roles: MAKOTO_ORPHEUS_S3_MOD, leave: 'Doll_Skill_3_P2_SwitchOut' }),
+    makotoAllOut: Object.freeze({
+      change: 'Skill_AllOutAttack_Loop', end: 'Skill_AllOutAttack_End', next: 'makotoBody',
+      roles: Object.freeze({ idle: 'Skill_AllOutAttack_Loop', deploy: 'Skill_AllOutAttack_Loop', move: loop('Skill_AllOutAttack_Loop') }),
+    }),
+    makotoBody: Object.freeze({ roles: Object.freeze({}) }),
+  }),
   char_1023_ghost2: Object.freeze({
     doll: Object.freeze({ change: 'Start_B', end: 'Die_B', leave: 'Start_2', roles: dollRoles('Idle_B', 'Die_B_2') }),
   }),

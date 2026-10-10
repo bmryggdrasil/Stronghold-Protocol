@@ -96,6 +96,27 @@ export class FxSim {
         this.burst(gx, gy, gs, this.quality === 'low' ? 4 : 8, 0xe96cff, { speed: 2.2, life: 0.42, tex: 'note', size: 0.34 });
         break;
       }
+      case 'makotoPersona': {
+        const g = cam.project(at.x, at.y, at.z + 0.15);
+        const r0 = Math.max(0.7, r);
+        this.tileFlash(tilesAround(at.x, at.y, r0, 'disc'), col, 0.22);
+        this.ring(at.x, at.y, at.z, 0.12, r0, col, 0.42, 'hex');
+        this.ring(at.x, at.y, at.z + 0.02, 0.25, r0 * 0.72, col, 0.38, 'shock');
+        this.particle('pillar', g.x, g.y, { tint: col, life: 0.42, s0: g.s / 64 * 0.62, s1: g.s / 64 * 0.2, a0: 0.72, a1: 0 });
+        this.burst(g.x, g.y - g.s * 0.24, g.s, this.quality === 'low' ? 7 : 13, col,
+          { speed: 1.6, life: 0.46, tex: ex.persona === 'orpheus' ? 'note' : 'shard', size: 0.36 });
+        break;
+      }
+      case 'makotoAllOut': {
+        const tiles = tilesAround(at.x, at.y, r, ex.tiles || 'disc');
+        this.tileFlash(tiles, 0xf4e8c6, 0.28, true);
+        this.flashScreen(0xf4e8c6, 0.24);
+        this.ring(at.x, at.y, at.z, 0.18, r * 1.2, 0xf4e8c6, 0.52, 'shock');
+        this.ring(at.x, at.y, at.z + 0.02, 0.25, r * 0.8, 0x7786e8, 0.44, 'hex');
+        this.burst(p.x, p.y, s, this.quality === 'low' ? 8 : 16, 0xf4e8c6,
+          { speed: 2.4, life: 0.52, tex: 'slash', size: 0.5 });
+        break;
+      }
       case 'shell': {
         // 蕾缪安 S3: a shell fired now by `id` that lands at (x, y) after `t` game seconds (its 'bombard' explodes there)
         const flight = num(ex.t ?? ex.flight ?? ex.dur ?? ex.duration, 1) / ts;

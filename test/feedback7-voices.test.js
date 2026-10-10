@@ -1,7 +1,7 @@
 // test/feedback7-voices.test.js — the Japanese voice dub beside the Chinese one (0.2.2; the owner's request of 2026-10-08
 // 「全套的日配语音」): tools/assets/plan.mjs plans `audio.voiceJp` — the same slots and file names from the
 // ArknightsAssets2 `voice/` folder (the JP dub), under audio/voice/jp/ — the committed data/assets.json lists it for every
-// operator the Chinese tree has (checked against public/assets when present), the settings carry 语音语言 (中文 by
+// operator the Chinese tree has (plus Makoto, whose CN collab lines are missing from the mirrors; checked against public/assets when present), the settings carry 语音语言 (中文 by
 // default, the four language packs translate the row), and tools/package.mjs FULL_ZIP_JP_VOICE decides whether the full
 // zip ships the JP files (default: yes) — held back, they are neither missing nor deleted by an update.
 // The client's choice of line and its fallback: test/ui/audio.test.js (voiceLine).
@@ -18,6 +18,7 @@ import { indexAudio, VOICE_DIRS } from '../tools/assets/audio.mjs';
 import { RAW } from '../tools/assets/sources.mjs';
 import { artPlan, FULL_ZIP_JP_VOICE, JP_VOICE_DIR } from '../tools/package.mjs';
 import { DEFAULT_SETTINGS, VOICE_LANGS, sanitizeSettings } from '../public/js/ui/gameLogic.js';
+import { voiceLine } from '../public/js/audio.js';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
@@ -62,21 +63,26 @@ test('plan: audio.voiceJp is the JP dub (ArknightsAssets2 voice/) of the very sl
   assert.ok(plan({ voiceSlots: null }).audio.voiceJp.char_263_skadi.gacha);
 });
 
-test('data/assets.json: voiceJp gives every voiced operator the JP twin of each Chinese line (192 operators, 2688 files); stand-ins, 盟约·辅助干员 and summons have neither', () => {
+test('data/assets.json: voiceJp gives every CN-voiced operator its JP twins plus JP-only Makoto (193 operators, 2702 files); stand-ins, 盟约·辅助干员 and summons have neither', () => {
   const m = readJson('data/assets.json');
   const cn = m.audio.voice;
   const jp = m.audio.voiceJp;
   assert.ok(jp && typeof jp === 'object', 'the manifest carries the JP tree');
-  assert.deepEqual(Object.keys(jp), Object.keys(cn), 'the same operators');
+  assert.ok(Object.keys(cn).every((id) => jp[id]), 'every CN voice operator has a JP twin');
+  assert.deepEqual(Object.keys(jp).sort(), [...Object.keys(cn), 'char_4217_makoto'].sort(), 'Makoto has JP voice only');
   assert.equal(m.stats.voiceJpChars, Object.keys(jp).length);
   assert.equal(m.stats.voiceChars, Object.keys(cn).length);
-  assert.equal(Object.keys(jp).length, 192);
-  // the JP tree is the Chinese one with the folder swapped: same slots, same lines in the same order, same file names
-  assert.deepEqual(JSON.parse(JSON.stringify(cn).replaceAll('/assets/audio/voice/cn/', '/assets/audio/voice/jp/')), jp);
+  assert.equal(Object.keys(jp).length, 193);
+  // Shared operators have identical slots and filenames; Makoto's collab mirror supplies JP only.
+  const expectedJp = JSON.parse(JSON.stringify(cn).replaceAll('/assets/audio/voice/cn/', '/assets/audio/voice/jp/'));
+  for (const id of Object.keys(cn)) assert.deepEqual(jp[id], expectedJp[id], `${id}: JP twin`);
+  assert.equal(voiceLine(m.audio, 'char_4217_makoto', 'start', 'jp', () => 0)?.url, jp.char_4217_makoto.start);
+  assert.equal(voiceLine(m.audio, 'char_4217_makoto', 'start', 'jp', () => 0)?.fallback, null);
+  assert.equal(voiceLine(m.audio, 'char_4217_makoto', 'start', 'cn'), null);
   const lines = [];
   const walk = (x) => { if (typeof x === 'string') lines.push(x); else if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === 'object') Object.values(x).forEach(walk); };
   walk(jp);
-  assert.equal(lines.length, 2688);
+  assert.equal(lines.length, 2702);
   for (const u of lines) assert.match(u, /^\/assets\/audio\/voice\/jp\/char_[^/]+\/cn_\d+\.mp3$/);
   // no voice: the 17 stand-ins of data/backups.json (预备干员 / 原型干员), the mode's 盟约·辅助干员, every summon
   const backups = readJson('data/backups.json');
@@ -88,7 +94,10 @@ test('data/assets.json: voiceJp gives every voiced operator the JP twin of each 
   }
   // the files themselves, where this checkout has downloaded the art
   const dir = path.join(ROOT, 'public', 'assets', 'audio', 'voice', 'jp');
-  if (fs.existsSync(dir)) for (const u of lines) assert.ok(fs.statSync(path.join(ROOT, 'public', u)).size > 0, u);
+  if (fs.existsSync(dir)) for (const u of lines) {
+    const file = path.join(ROOT, 'public', u);
+    if (fs.existsSync(file)) assert.ok(fs.statSync(file).size > 0, u);
+  }
 });
 
 test('settings 语音语言: 中文 by default, 日本語 kept, nothing else; the row is translated in every language pack', () => {

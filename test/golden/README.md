@@ -32,7 +32,7 @@ to 2 decimals.
 
 `npm test` runs the fast subset (the scenarios marked `"fast": true`: every chess record with its default loadout,
 every stage and every non-leader enemy kind, every bond at its top tier, six fields, seven matches, the five stand-in
-battles of the normal records, the first 自选 battle of the operator kits and of the prototypes — 62 of the 151). `GOLDEN_FULL=1` checks everything.
+battles of the normal records, the first 自选 battle of the operator kits and of the prototypes — 62 of 288). `GOLDEN_FULL=1` checks everything.
 
 ## Workflow
 

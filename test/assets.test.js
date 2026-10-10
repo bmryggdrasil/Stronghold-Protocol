@@ -1,7 +1,7 @@
 // Tests for the asset pipeline (tools/assets/*) and the generated manifest
 // data/assets.json. The pure helpers (animation-role resolver, atlas
 // normalizer, PNG/WOFF2/audio helpers, plan id sets) are always tested; the
-// on-disk checks run only when public/assets exists (it is git-ignored and
+// on-disk checks run only when the complete manifest asset set exists under public/assets (it is git-ignored and
 // produced by `npm run assets`); the optional local-client enemy and token models
 // (spineLocal, tools/local-extract) only when data/local-assets.json lists them.
 
@@ -17,9 +17,10 @@ import { normalizeAtlas, atlasInfo, parseAtlas } from '../tools/assets/atlas.mjs
 import { pngSize, isCompletePng, isMp3, validate } from '../tools/assets/formats.mjs';
 import { encodeWoff2, decodeWoff2Tables, readSfnt, uintBase128 } from '../tools/assets/woff2.mjs';
 import { assetToPath, pickUnitSfx, indexAudio } from '../tools/assets/audio.mjs';
-import { mirrorUrl, safeName, encodePath } from '../tools/assets/sources.mjs';
-import { collectEnemyIds, skillIndicesByChar, buildPlan, GUIDE_PAGES, UI_EXTRAS } from '../tools/assets/plan.mjs';
-import { resolveTemplate, collectLeaves } from '../tools/assets/manifest.mjs';
+import { mirrorUrl, safeName, encodePath, RAW } from '../tools/assets/sources.mjs';
+import { collectEnemyIds, skillIndicesByChar, buildPlan, patternOperator, onlyOperatorPlan, GUIDE_PAGES, UI_EXTRAS } from '../tools/assets/plan.mjs';
+import { resolveTemplate, collectLeaves, mergeOperatorManifest } from '../tools/assets/manifest.mjs';
+import { FX_KINDS, fxSpec } from '../public/js/render/fx/kinds.js';
 import { spineEntry } from '../public/js/assets.js';
 import { EMOTE_CATALOG, emoteArtGroup } from '../shared/constants.js';
 
@@ -28,6 +29,60 @@ const PUBLIC = join(ROOT, 'public');
 const ASSETS = join(PUBLIC, 'assets');
 const MANIFEST = join(ROOT, 'data', 'assets.json');
 const readJson = (rel) => JSON.parse(readFileSync(join(ROOT, rel), 'utf8'));
+
+test('the approved Makoto pick resolves its P3R costume assets instead of E2 art', () => {
+  const id = 'char_4217_makoto';
+  const op = patternOperator(id, { skinId: `${id}@p3r#1`, subProfessionId: 'dollkeeper', skills: [
+    { index: 0, skillId: 'skchr_makoto_1' }, { index: 1, skillId: 'skchr_makoto_2' }, { index: 2, skillId: 'skchr_makoto_3' },
+  ] });
+  assert.equal(op.avatar.e0e1.url, `${RAW.yuanyan}avatar/char_4217_makoto_p3r%231.png`);
+  assert.equal(op.avatar.e2.url, op.avatar.e0e1.url, 'the requested costume wins over E2 art');
+  assert.equal(op.portrait.e0e1.url, `${RAW.yuanyan}portrait/char_4217_makoto_p3r%231.png`);
+  assert.equal(op.portrait.e2.url, op.portrait.e0e1.url);
+  assert.match(op.battleSpine.front.skel, /char_4217_makoto_p3r_1\/Front\/char_4217_makoto_p3r_1\.skel$/);
+  assert.match(op.battleSpine.back.skel, /char_4217_makoto_p3r_1\/Back\/char_4217_makoto_p3r_1\.skel$/);
+});
+
+test('a one-operator asset plan keeps only that character, its skills, subprofession and models', () => {
+  const id = 'char_4217_makoto';
+  const plan = onlyOperatorPlan({
+    template: {
+      chars: { [id]: { avatar: {}, portrait: {}, spine: { front: {}, back: {} } }, char_002_amiya: {} },
+      skills: { skchr_makoto_1: {}, unrelated: {} }, skillsById: { skchr_makoto_1: 'skchr_makoto_1', unrelated: 'unrelated' },
+      modules: { 'pum-y': {} }, prof: { sub: { dollkeeper: {}, sniper: {} } }, enemies: { enemy_a: {} },
+      tokens: {}, bonds: {}, items: {}, bands: {}, ui: {}, audio: { sfx: { units: {} }, voice: {}, voiceJp: {} },
+    },
+    models: new Map([['op:char_4217_makoto:front', {}], ['op:char_4217_makoto:back', {}], ['op:char_002_amiya:front', {}]]), notes: [],
+  }, id, 'dollkeeper');
+  assert.deepEqual(Object.keys(plan.template.chars), [id]);
+  assert.deepEqual(Object.keys(plan.template.skills), ['skchr_makoto_1']);
+  assert.deepEqual(Object.keys(plan.template.prof.sub), ['dollkeeper']);
+  assert.deepEqual([...plan.models.keys()], ['op:char_4217_makoto:front', 'op:char_4217_makoto:back']);
+  assert.deepEqual(Object.keys(plan.template.enemies), []);
+});
+
+test('single-operator manifest overlay preserves unrelated published assets', () => {
+  const old = { chars: { char_002_amiya: { avatar: '/assets/a.png' } }, skills: { base: '/assets/base.png' },
+    skillsById: { base: 'base' }, modules: {}, prof: { sub: { sniper: '/assets/sniper.png' } },
+    audio: { sfx: { units: { old: { attack: '/assets/old.mp3' } } }, voice: {}, voiceJp: {} }, fonts: { files: {} } };
+  const partial = { chars: { char_4217_makoto: { avatar: '/assets/makoto.png' } }, skills: { makoto: '/assets/makoto-skill.png' },
+    skillsById: { skchr_makoto_1: 'makoto' }, modules: {}, prof: { sub: { dollkeeper: '/assets/dollkeeper.png' } },
+    audio: { sfx: { units: { char_4217_makoto: { attack: '/assets/makoto.mp3' } } }, voice: {}, voiceJp: {} } };
+  const merged = mergeOperatorManifest(old, partial, 'char_4217_makoto');
+  assert.ok(merged.chars.char_002_amiya && merged.chars.char_4217_makoto);
+  assert.deepEqual(Object.keys(merged.skills).sort(), ['base', 'makoto']);
+  assert.ok(merged.prof.sub.sniper && merged.prof.sub.dollkeeper);
+  assert.deepEqual(Object.keys(merged.audio.sfx.units).sort(), ['char_4217_makoto', 'old']);
+  assert.deepEqual(merged.fonts, old.fonts);
+});
+
+test('Makoto Persona and All-Out effects have explicit procedural visuals', () => {
+  assert.equal(FX_KINDS.makotoPersona.a, 'makotoPersona');
+  assert.equal(fxSpec('makotoPersona', { persona: 'thanatos' }).c, 0x6e7be8);
+  assert.equal(fxSpec('makotoPersona', { persona: 'orpheus' }).c, 0xffc56e);
+  assert.equal(FX_KINDS.makotoAllOut.a, 'makotoAllOut');
+  assert.equal(FX_KINDS.makotoAura.a, 'healAoe');
+});
 
 // ---------------------------------------------------------------------------
 describe('animation-role resolver (research 07 §5.4)', () => {
@@ -675,8 +730,6 @@ describe('generated manifest data/assets.json', () => {
   const haveManifest = existsSync(MANIFEST);
   const haveAssets = existsSync(ASSETS);
   const manifest = haveManifest ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : null;
-  const skip = !haveManifest ? 'data/assets.json not generated (run npm run assets)'
-    : !haveAssets ? 'public/assets missing (run npm run assets)' : false;
 
   /** Every '/assets/…' or '/fonts/…' URL in the manifest. */
   function urls(node, out = []) {
@@ -685,6 +738,13 @@ describe('generated manifest data/assets.json', () => {
     else if (node && typeof node === 'object') Object.values(node).forEach((x) => urls(x, out));
     return out;
   }
+
+  const missingOnDisk = haveManifest && haveAssets
+    ? [...new Set(urls(manifest))].find((u) => !existsSync(join(PUBLIC, u)) || statSync(join(PUBLIC, u)).size === 0)
+    : null;
+  const skip = !haveManifest ? 'data/assets.json not generated (run npm run assets)'
+    : !haveAssets ? 'public/assets missing (run npm run assets)'
+      : missingOnDisk ? 'public/assets is partial (run npm run assets for the complete disk checks)' : false;
 
   test('shape', { skip: !haveManifest && 'data/assets.json not generated' }, () => {
     assert.equal(manifest.version, 1);

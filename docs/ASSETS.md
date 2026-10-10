@@ -169,7 +169,7 @@ The `stem` of a Spine model is the upstream file name. Two examples: `char_107_l
 
 ### Id scope
 
-- **Operators:** all 138 pool charIds from `activity_table` (`charShopChessDatas[*].charId ∪ backupCharId`), including hidden chess and backup operators; plus every unit of `data/backups.json` research 07 does not list — the 72 自选 owned-6★ picks (`diy.ownedPool`, DATA.md §18; the collab operators are not in the data, and 焰狐龙梓兰's entries left the manifest when she left the pool in 0.2.0) — planned from 07's URL patterns (`tools/assets/plan.mjs patternOperator`, `tools/fetch-assets.mjs dataExtras`): avatar and portrait (E0–E1 and E2), the default-skin battle Spine Front / Back, the icon and skill sound of each skill, the sub-profession icon. 209 operators in all (206 with a Back model).
+- **Operators:** all 138 pool charIds from `activity_table` (`charShopChessDatas[*].charId ∪ backupCharId`), including hidden chess and backup operators; plus every unit of `data/backups.json` research 07 does not list — the 74 自选 owned-6★ picks (`diy.ownedPool`, DATA.md §18; the existing 丰川祥子 custom pick and newly approved 结城理 collaboration pick are included, other collab operators remain excluded; 焰狐龙梓兰's entries left the manifest when she left the pool in 0.2.0) — planned from 07's URL patterns (`tools/assets/plan.mjs patternOperator`, `tools/fetch-assets.mjs dataExtras`): avatar and portrait (E0–E1 and E2), the equipped costume's battle Spine Front / Back, the icon and skill sound of each skill, the sub-profession icon. 212 operators in all (209 with a Back model).
 - **Tokens:** the 20 pool tokens, and the 38 summons of the 自选 picks (`data/backups.json tokens`) as extra tokens (below): their avatars; no dump carries the battle Spine of the 自选 summons (upstream has at most skin variants, which the default locations miss), so the web manifest has no model for them — 35 of them, and 4 pool summons, have the official model as an optional local-client overlay ("Token models from the local client"); 3 have no model in the game at all.
 - **Enemies:** 253 ids planned, 252 in the manifest (心烛 has no assets). The set is the union of:
   - the 07 enemy list;
@@ -256,8 +256,9 @@ All paths are URL paths relative to the site root, for example `/assets/char/ava
                            // nothing requests them and they cost 360 files (19.3 MB) per run — and `--voice-all` adds
                            // them (audio.mjs VOICE_PREP_SLOTS) for the complete official set
     voiceJp: { [charId]: { …the slots of `voice` } },
-                           // the Japanese dub (0.2.2, the owner's request 「全套的日配语音」): the same slots, lines and file
-                           // names as `voice`, under /assets/audio/voice/jp/ (AA2 `voice/`). The client plays it when the
+                            // the Japanese dub (0.2.2, the owner's request 「全套的日配语音」): normally the same slots, lines and file
+                            // names as `voice`, under /assets/audio/voice/jp/ (AA2 `voice/`); a mirror may also supply a JP-only
+                            // operator (0.2.4: char_4217_makoto). The client plays it when the
                            // player picks 日本語 (settings 语音语言, not tied to the interface language) and falls back to
                            // `voice` for a slot it lacks or a file the host does not have (public/js/audio.js voiceLine);
                            // the full zip ships it unless tools/package.mjs FULL_ZIP_JP_VOICE is off
