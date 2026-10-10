@@ -55,6 +55,7 @@ export class FxSim {
    */
   simFx(kind, x, y, extra) {
     const ex = extra && typeof extra === 'object' ? extra : {};
+    if (kind === 'oblvnsNote') { this.musicNote(ex, Number(x), Number(y)); return; }
     const spec = fxSpec(kind, ex);
     if (spec.a === 'none') return; // an event the screen does not show (hitCap)
     const at = spec.pt ? this._point(Number(x), Number(y)) : this._where(Number(x), Number(y), ex);
@@ -76,6 +77,23 @@ export class FxSim {
         if (r >= 12) { this.flashScreen(col, 0.5); break; }
         if (kind === 'bombard') { this._touchLocks(ex.id ?? ex.src ?? null); this._landed(ex.id ?? ex.src ?? null, at.x, at.y, r); }
         this.explosion(at.x, at.y, at.z, r, col, { smoke: spec.smoke, heavy: !!spec.heavy, tiles: ex.tiles ? tilesAround(at.x, at.y, r, ex.tiles) : null });
+        break;
+      }
+      case 'crystal': {
+        const g = cam.project(at.x, at.y, at.z + 0.2, this._g);
+        const gx = g.x, gy = g.y, gs = g.s;
+        const tiles = [];
+        const cr = Math.round(at.y), cc = Math.round(at.x);
+        for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) {
+          if (Math.abs(dr) + Math.abs(dc) <= 2) tiles.push([cr + dr, cc + dc]);
+        }
+        this.tileFlash(tiles, 0xff245f, 0.58);
+        this.ring(at.x, at.y, at.z, 0.12, r * 1.15, 0xff315f, 0.55, 'hex');
+        this.ring(at.x, at.y, at.z + 0.01, 0.2, r * 0.8, 0xff8ad9, 0.42, 'shock');
+        this.particle('flare', gx, gy, { tint: 0xffe8f5, life: 0.2, s0: (gs / 128) * 1.4, s1: (gs / 128) * 0.25, a0: 1, a1: 0 });
+        this.particle('glow', gx, gy, { tint: col, life: 0.4, s0: (gs / 128) * 0.8, s1: (gs / 128) * 2.1, a0: 0.95, a1: 0 });
+        this.burst(gx, gy, gs, this.quality === 'low' ? 6 : 12, 0xff315f, { speed: 2.8, life: 0.5, tex: 'shard', size: 0.42 });
+        this.burst(gx, gy, gs, this.quality === 'low' ? 4 : 8, 0xe96cff, { speed: 2.2, life: 0.42, tex: 'note', size: 0.34 });
         break;
       }
       case 'shell': {
