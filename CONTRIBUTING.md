@@ -24,7 +24,7 @@ npm run dev        # 启动服务器（node --watch，改了服务器代码自�
 ```bash
 node --test test/content/op_siege.test.js                        # 一个文件
 node --test --test-name-pattern="S3" test/content/op_siege.test.js  # 文件里的部分用例
-node --test                                                      # 全部（需要浏览器 / 素材的用例自动跳过）
+npm test                                                         # 全部（需要浏览器 / 素材的用例自动跳过；不带文件的 node --test 还会跑 test/ 下的辅助模块和夹具）
 npm run golden                                                   # 黄金结果：整套固定种子的战斗和对局
 GOLDEN_FULL=1 node --test test/golden.test.js                    # 同上，node:test 形式
 npm run golden:update                                            # 有意改变玩法时重新生成
@@ -32,7 +32,7 @@ npm run lint && npm run check:imports && npm run typecheck       # 代码检查�
 ```
 
 提交 PR 前可以一条命令跑一遍 GitHub CI（`.github/workflows/ci.yml`）的全部检查：`npm run ci`（或 `node tools/ci.mjs`）。
-依次是 setup 检查、`node --test`、服务器冒烟测试（在空闲端口启动、请求 `/healthz` 和首页、运行 doctor，然后关掉）、lint、导入边界、
+依次是 setup 检查、`npm test`、服务器冒烟测试（在空闲端口启动、请求 `/healthz` 和首页、运行 doctor，然后关掉）、lint、导入边界、
 类型；第一步失败就停下并打印每步结果和耗时。`--keep-going` 失败后继续，`--only lint,test` 只跑指定步骤，`--list` 列出步骤。
 不包含 `npm ci`（依赖请自己装），也不跑 Node 版本 × 系统的矩阵。
 
@@ -44,6 +44,13 @@ SP_REAL_E2E=1 node --test test/ui/real.e2e.test.js               # 真实对局�
 RENDER_E2E=1 node --test 'test/render/*.browser.test.js'         # 渲染
 SIM_E2E=1 node --test 'test/sim/*.browser.test.js'               # 浏览器里的战斗模拟
 ```
+
+改了模拟（`server/sim/`）之后，可以检查各浏览器算出的战斗和服务器是否仍然逐位一致：`node tools/sim-check.mjs`
+在 Node 里记录黄金结果的整套战斗，然后在任意设备（包括手机）的浏览器里打开服务器的 `/dev/sim-check.html` 重放比较；
+加 `--engines chromium,firefox,webkit` 直接在无界面的浏览器里跑（Firefox 和 WebKit 需要先装 playwright）。不一致时
+页面指出首次检测到差异的区间，以及结果、抽样快照或已记录状态的差别。`--diff` 可定位导出的状态向量字段；仅快照或深层状态差异不保证能定位字段。
+参考数据含运行代码、数据与场景内容指纹，修改后必须重新生成；空筛选、未完成或运行异常均不算通过。细节见 docs/SIM.md
+「11. Tools」。
 
 **黄金结果**（[test/golden/README.md](test/golden/README.md)）：只重构、不改玩法的提交不能改变
 `test/golden/*.json`；有意改变玩法时运行 `npm run golden:update`，把新文件和改动放在同一个提交里，并在提交说明里写清
@@ -103,13 +110,16 @@ SIM_E2E=1 node --test 'test/sim/*.browser.test.js'               # 浏览器里�
 
 - **Setup**: Node.js 22 or 24; `npm install`, `npm run setup` (art and audio — optional for tests), `npm run dev`.
   The code map is [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-- **Tests**: run the targeted files (`node --test <file>`, `--test-name-pattern`), then `node --test` and
-  `npm run golden` before a pull request; `npm run lint`, `npm run check:imports`, `npm run typecheck`.
+- **Tests**: run the targeted files (`node --test <file>`, `--test-name-pattern`), then `npm test` and
+  `npm run golden` before a pull request (a bare `node --test` also runs the helpers and fixtures under test/);
+  `npm run lint`, `npm run check:imports`, `npm run typecheck`.
   `npm run ci` (or `node tools/ci.mjs`) runs the checks of `.github/workflows/ci.yml` in one go and stops at the first
   failure (`--keep-going`, `--only <steps>`, `--list`); it does not run `npm ci`. Browser suites
   are opt-in: `SP_E2E=1`, `SP_REAL_E2E=1` (needs downloaded art), `RENDER_E2E=1`, `SIM_E2E=1` (a local Chrome,
   `CHROME_PATH`). A refactor never changes `test/golden/*.json`; an intended gameplay change runs
   `npm run golden:update` and commits the digests with the change, naming the scenarios that moved.
+  After a sim change, `node tools/sim-check.mjs` checks that browsers still give the server's bits: it traces the golden
+  battle corpus in Node; `/dev/sim-check.html` replays it on any device (`--engines chromium,firefox,webkit` headless).
 - **Fidelity**: the official tables (`.cache/gamedata/excel/`) and PRTS (including the 备注 notes) are the sources;
   numbers come from the blackboards. Anything no source settles is marked `[ASSUMED]` in the code and the pull
   request; owner decisions are cited with their date; deliberate deviations are the owner's call and go into the design
