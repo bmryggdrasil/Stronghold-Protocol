@@ -64,7 +64,6 @@ import { recordError, installTrafficMeter } from './diag.js';
 import { installContent, installContentSet } from './content.js';
 import { cosmetics } from './cosmetics.js';
 import { actions } from './ui/gameActions.js';
-import { audio } from './audio.js';
 
 const RESTORE_GRACE_MS = 1500;
 const JOIN_DELAY_MS = 350;
