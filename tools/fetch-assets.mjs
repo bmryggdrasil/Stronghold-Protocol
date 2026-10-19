@@ -51,17 +51,11 @@
 // re-download, rewrite or delete an existing file (atlases already on disk are
 // left as they are; fonts are not rebuilt — the manifest keeps its current
 // `fonts`).
-// --only-operator: download one new backups.json operator and merge just its art into the existing manifest. This avoids
-// re-fetching the full asset pack when a DIY kit adds one approved operator.
 //
 // Usage: node tools/fetch-assets.mjs [--concurrency=16] [--force] [--offline]
 //                                    [--dry-run] [--refresh-index] [--prune]
 //                                    [--allow-shrink] [--add-only] [--strict]
-<<<<<<< HEAD
-//                                    [--local-spines] [--only-operator=charId] [--help]
-=======
 //                                    [--local-spines] [--no-optional-voice] [--help]
->>>>>>> upstream/master
 
 import { readFile, writeFile, mkdir, rename, readdir, unlink } from 'node:fs/promises';
 import { existsSync, realpathSync } from 'node:fs';
@@ -73,12 +67,12 @@ import { MirrorPolicy, selectDownloadSource, validateSource } from './assets/net
 import { normalizeProxyPrefix } from './assets/sources.mjs';
 import { loadIndexes } from './assets/cache.mjs';
 import { indexAudio, VOICE_DIRS } from './assets/audio.mjs';
-import { buildPlan, onlyOperatorPlan, VOICE_OPTIONAL_TREES } from './assets/plan.mjs';
+import { buildPlan, charModesFromIndex, VOICE_OPTIONAL_TREES } from './assets/plan.mjs';
 import {
   processModels, findLocalEnemyModels, findLocalTokenModels, localSpineMeta, loadLocalSpines, LOCAL_ENEMY_SPINES_FILE,
   LOCAL_TOKEN_SPINES_FILE, LOCAL_ENEMY_SPINE_DIR, LOCAL_TOKEN_SPINE_DIR,
 } from './assets/spine.mjs';
-import { collectLeaves, downloadLeaves, resolveTemplate, totalBytes, contentHash, droppedEntries, MANIFEST_VERSION, mergeOperatorManifest } from './assets/manifest.mjs';
+import { collectLeaves, downloadLeaves, resolveTemplate, totalBytes, contentHash, droppedEntries, MANIFEST_VERSION } from './assets/manifest.mjs';
 import { fontJobs, buildFonts } from './assets/fonts.mjs';
 import { statsTemplateJobs } from './assets/stats-template.mjs';
 import { skelParserAvailable } from './assets/skel.mjs';
@@ -132,7 +126,6 @@ const HELP = `Usage: node tools/fetch-assets.mjs [options]
                     sound that never plays); by default such a drop is only reported
   --add-only        download only files missing on disk; never re-download, rewrite or delete an existing
                     file, no font rebuild (a worktree sharing public/assets and public/fonts)
-  --only-operator=ID download one data/backups.json operator and merge its art into the current manifest
   --local-spines    rewrite ${LOCAL_ENEMY_SPINES_FILE} and ${LOCAL_TOKEN_SPINES_FILE} from the
                     enemy and token models extracted by tools/local-extract/extract.py
                     (public/assets/local/spine/enemy/, public/assets/local/spine/token/)
@@ -156,10 +149,10 @@ function envFlag(value) {
 /**
  * Parse CLI flags.
  * @param {string[]} argv
- * @returns {{concurrency:number, force:boolean, offline:boolean, dryRun:boolean, refreshIndex:boolean, prune:boolean, allowShrink:boolean, strict:boolean, addOnly:boolean, localSpines:boolean, voiceLang:string, voiceAll:boolean, optionalVoice:boolean, onlyOperator:string|null, help:boolean, source:string, sourceSnapshot:string}}
+ * @returns {{concurrency:number, force:boolean, offline:boolean, dryRun:boolean, refreshIndex:boolean, prune:boolean, allowShrink:boolean, strict:boolean, addOnly:boolean, localSpines:boolean, voiceLang:string, voiceAll:boolean, optionalVoice:boolean, help:boolean, source:string, sourceSnapshot:string}}
  */
 export function parseArgs(argv) {
-  const o = { concurrency: 16, force: false, offline: false, dryRun: false, refreshIndex: false, prune: false, allowShrink: false, strict: envFlag(process.env.SP_ASSETS_STRICT), addOnly: false, localSpines: false, voiceLang: 'cn', voiceAll: false, optionalVoice: true, onlyOperator: null, help: false, source: process.env.SP_ASSET_SOURCE || 'direct', sourceSnapshot: '' };
+  const o = { concurrency: 16, force: false, offline: false, dryRun: false, refreshIndex: false, prune: false, allowShrink: false, strict: envFlag(process.env.SP_ASSETS_STRICT), addOnly: false, localSpines: false, voiceLang: 'cn', voiceAll: false, optionalVoice: true, help: false, source: process.env.SP_ASSET_SOURCE || 'direct', sourceSnapshot: '' };
   for (const a of argv) {
     const [k, v] = a.split('=');
     if (k === '--concurrency') o.concurrency = Math.max(1, Math.min(64, parseInt(v, 10) || 16));
@@ -176,10 +169,6 @@ export function parseArgs(argv) {
     else if (k === '--local-spines') o.localSpines = true;
     else if (k === '--voice-lang') { if (!VOICE_DIRS[v]) throw new Error(`unknown --voice-lang ${v} (cn | jp | en | kr)`); o.voiceLang = v; }
     else if (k === '--voice-all') o.voiceAll = true;
-    else if (k === '--only-operator') {
-      if (!/^char_\d+_[a-z0-9]+$/i.test(v || '')) throw new Error('--only-operator needs a charId (e.g. char_4217_makoto)');
-      o.onlyOperator = v;
-    }
     else if (k === '--no-optional-voice') o.optionalVoice = false;
     else if (k === '--help' || k === '-h') o.help = true;
     else throw new Error(`unknown option ${a}\n${HELP}`);
@@ -211,9 +200,7 @@ export function dataExtras(backups, chess) {
       for (const sk of f.skills || []) if (!skills.has(sk.index)) skills.set(sk.index, { index: sk.index, skillId: sk.skillId, iconId: sk.iconId || sk.skillId });
       for (const m of f.modules || []) if (m.typeIcon) moduleTypes.add(m.typeIcon);
     }
-    extraOperators[id] = { name: u.name, subProfessionId: u.subProfessionId, nationId: u.nationId,
-      ...(u.assets?.skinId ? { skinId: u.assets.skinId } : null),
-      skills: [...skills.values()].sort((a, b) => a.index - b.index) };
+    extraOperators[id] = { name: u.name, subProfessionId: u.subProfessionId, nationId: u.nationId, skills: [...skills.values()].sort((a, b) => a.index - b.index) };
   }
   for (const c of Object.values(chess || {})) for (const m of c?.modules || []) if (m.typeIcon) moduleTypes.add(m.typeIcon);
   return { extraOperators, tokenIds: Object.keys(backups?.tokens || {}).sort(), moduleTypes: [...moduleTypes].sort() };
@@ -384,13 +371,6 @@ function requiredMisses(m, charIds) {
   return out;
 }
 
-function manifestAssetPaths(value, out = new Set()) {
-  if (typeof value === 'string' && value.startsWith('/assets/')) out.add(value.slice('/assets/'.length));
-  else if (Array.isArray(value)) for (const x of value) manifestAssetPaths(x, out);
-  else if (value && typeof value === 'object') for (const x of Object.values(value)) manifestAssetPaths(x, out);
-  return out;
-}
-
 /**
  * Metadata of the local-client models of one kind (LOCAL_SPINE_KINDS: the committed file). With --local-spines it is
  * rewritten from the models extracted under public/assets/local/spine/<kind>/ (read only); otherwise extracted models
@@ -442,6 +422,17 @@ async function main() {
   const network = { source, proxyPrefix, mirrorPolicy, verifier };
   const { audioData, modelsData, charword } = await loadIndexes(ROOT, { refresh: opts.refreshIndex && !opts.offline, offline: opts.offline, log, ...network });
   const audio = indexAudio(audioData);
+  // Skill attack slots follow each operator's mode list when the local fx index is on disk (#679). It is a client
+  // extract (public/assets is not in git); without it the plan keeps the filename-letter fallback.
+  const fxIndexPath = join(ROOT, 'public', 'assets', 'local', 'fx', 'index.json');
+  let charModes = null;
+  if (existsSync(fxIndexPath)) {
+    const fxIndex = JSON.parse(await readFile(fxIndexPath, 'utf8'));
+    charModes = charModesFromIndex(fxIndex);
+    log(`[fx] skill modes for ${charModes.size} operators`);
+  } else {
+    log('[fx] no local fx index — skill attack slots stay on the filename letter');
+  }
   // The game data built by tools/build-data.mjs (when present) may reference more
   // spawnable enemies/tokens than research lists (e.g. 机变 enemy swaps): cover them too.
   const [dataEnemies, dataTokens, dataBosses, dataBackups, dataChess] = await Promise.all(
@@ -452,7 +443,7 @@ async function main() {
   const localEnemySpines = await syncLocalSpines(opts, 'enemy');
   const localTokenSpines = await syncLocalSpines(opts, 'token');
   const statsTemplate = await statsTemplateJobs(ROOT, { offline: opts.offline || opts.dryRun, log });
-  let plan = buildPlan({
+  const plan = buildPlan({
     assets07, ops03, enemies05, maps05, audio, modelsData, charword, voiceLang: opts.voiceLang,
     // default: only the slots a battle can play (plan.mjs VOICE_BATTLE_SLOTS); --voice-all takes the whole official set
     voiceSlots: opts.voiceAll ? null : undefined,
@@ -465,11 +456,8 @@ async function main() {
     extraOperators: extras.extraOperators,
     moduleTypes: extras.moduleTypes,
     statsTemplate,
+    charModes,
   });
-  if (opts.onlyOperator) {
-    if (!existsSync(MANIFEST)) throw new Error('--only-operator needs an existing data/assets.json to merge into');
-    plan = onlyOperatorPlan(plan, opts.onlyOperator, extras.extraOperators[opts.onlyOperator]?.subProfessionId ?? null);
-  }
   const leaves = collectLeaves(plan.template);
   log(`[plan] ${leaves.length} files + ${plan.models.size} Spine models ` +
     `(${Object.keys(plan.template.chars).length} chars, ${Object.keys(plan.template.enemies).length} enemies, ` +
@@ -525,37 +513,26 @@ async function main() {
     root: ASSETS, spine: spine.entries, sourceOf: (rel) => dl.ledger.files[rel]?.url,
     ...(verifier ? { available: (rel) => dl.accepted.has(rel) } : null),
   });
-  if (opts.onlyOperator) {
-    const c = resolved.value.chars?.[opts.onlyOperator];
-    if (!c?.avatar || !c?.portrait || !c?.spine?.front) {
-      throw new Error(`--only-operator ${opts.onlyOperator}: costume avatar, portrait and Front Spine are required; see ${REPORT}`);
-    }
-  }
-  let body = resolved.value;
-  if (opts.onlyOperator) body = mergeOperatorManifest(current, body, opts.onlyOperator);
+  const body = resolved.value;
   tidyManifest(body);
   tidyVoiceTrees(body);
   const fontFaces = {};
   for (const [name, f] of Object.entries(fonts.files)) fontFaces[name] = f;
   body.fonts = opts.addOnly && current?.fonts ? current.fonts
     : (verifier ? fonts.css : existsSync(join(FONTS, 'fonts.css'))) ? { css: '/fonts/fonts.css', faces: fontFaces } : { faces: fontFaces };
-  const oldPaths = opts.onlyOperator ? manifestAssetPaths(current) : null;
-  const addedPaths = opts.onlyOperator ? new Set([...resolved.files].filter((p) => !oldPaths.has(p))) : resolved.files;
-  const bytes = opts.onlyOperator
-    ? Number(current.stats?.bytes || 0) + totalBytes(ASSETS, addedPaths)
-    : totalBytes(ASSETS, resolved.files);
+  const bytes = totalBytes(ASSETS, resolved.files);
   const manifest = {
     version: MANIFEST_VERSION,
     hash: contentHash(body),
     generator: 'tools/fetch-assets.mjs',
-    stats: countStats(body, bytes, opts.onlyOperator ? Number(current.stats?.files || 0) + addedPaths.size : resolved.files.size),
+    stats: countStats(body, bytes, resolved.files.size),
     ...body,
   };
   const guard = shrinkGuard(current, manifest, opts);
   if (guard.write) await writeJsonAtomic(MANIFEST, manifest);
 
   // Orphans: files on disk that the manifest does not reference (e.g. after a mapping change).
-  const orphans = opts.onlyOperator ? [] : orphanFiles(await listFiles(ASSETS), new Set([...resolved.files, ...dl.preserved]));
+  const orphans = orphanFiles(await listFiles(ASSETS), new Set([...resolved.files, ...dl.preserved]));
   if (opts.prune) for (const r of orphans) { try { await unlink(join(ASSETS, r)); } catch { /* ignore */ } }
 
   const charIds = Object.keys(assets07.operators || {});

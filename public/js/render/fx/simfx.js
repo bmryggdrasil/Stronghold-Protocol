@@ -55,7 +55,6 @@ export class FxSim {
    */
   simFx(kind, x, y, extra) {
     const ex = extra && typeof extra === 'object' ? extra : {};
-    if (kind === 'oblvnsNote') { this.musicNote(ex, Number(x), Number(y)); return; }
     const spec = fxSpec(kind, ex);
     if (spec.a === 'none') return; // an event the screen does not show (hitCap)
     const at = spec.pt ? this._point(Number(x), Number(y)) : this._where(Number(x), Number(y), ex);
@@ -79,44 +78,6 @@ export class FxSim {
         this.explosion(at.x, at.y, at.z, r, col, { smoke: spec.smoke, heavy: !!spec.heavy, tiles: ex.tiles ? tilesAround(at.x, at.y, r, ex.tiles) : null });
         break;
       }
-      case 'crystal': {
-        const g = cam.project(at.x, at.y, at.z + 0.2, this._g);
-        const gx = g.x, gy = g.y, gs = g.s;
-        const tiles = [];
-        const cr = Math.round(at.y), cc = Math.round(at.x);
-        for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) {
-          if (Math.abs(dr) + Math.abs(dc) <= 2) tiles.push([cr + dr, cc + dc]);
-        }
-        this.tileFlash(tiles, 0xff245f, 0.58);
-        this.ring(at.x, at.y, at.z, 0.12, r * 1.15, 0xff315f, 0.55, 'hex');
-        this.ring(at.x, at.y, at.z + 0.01, 0.2, r * 0.8, 0xff8ad9, 0.42, 'shock');
-        this.particle('flare', gx, gy, { tint: 0xffe8f5, life: 0.2, s0: (gs / 128) * 1.4, s1: (gs / 128) * 0.25, a0: 1, a1: 0 });
-        this.particle('glow', gx, gy, { tint: col, life: 0.4, s0: (gs / 128) * 0.8, s1: (gs / 128) * 2.1, a0: 0.95, a1: 0 });
-        this.burst(gx, gy, gs, this.quality === 'low' ? 6 : 12, 0xff315f, { speed: 2.8, life: 0.5, tex: 'shard', size: 0.42 });
-        this.burst(gx, gy, gs, this.quality === 'low' ? 4 : 8, 0xe96cff, { speed: 2.2, life: 0.42, tex: 'note', size: 0.34 });
-        break;
-      }
-      case 'makotoPersona': {
-        const g = cam.project(at.x, at.y, at.z + 0.15);
-        const r0 = Math.max(0.7, r);
-        this.tileFlash(tilesAround(at.x, at.y, r0, 'disc'), col, 0.22);
-        this.ring(at.x, at.y, at.z, 0.12, r0, col, 0.42, 'hex');
-        this.ring(at.x, at.y, at.z + 0.02, 0.25, r0 * 0.72, col, 0.38, 'shock');
-        this.particle('pillar', g.x, g.y, { tint: col, life: 0.42, s0: g.s / 64 * 0.62, s1: g.s / 64 * 0.2, a0: 0.72, a1: 0 });
-        this.burst(g.x, g.y - g.s * 0.24, g.s, this.quality === 'low' ? 7 : 13, col,
-          { speed: 1.6, life: 0.46, tex: ex.persona === 'orpheus' ? 'note' : 'shard', size: 0.36 });
-        break;
-      }
-      case 'makotoAllOut': {
-        const tiles = tilesAround(at.x, at.y, r, ex.tiles || 'disc');
-        this.tileFlash(tiles, 0xf4e8c6, 0.28, true);
-        this.flashScreen(0xf4e8c6, 0.24);
-        this.ring(at.x, at.y, at.z, 0.18, r * 1.2, 0xf4e8c6, 0.52, 'shock');
-        this.ring(at.x, at.y, at.z + 0.02, 0.25, r * 0.8, 0x7786e8, 0.44, 'hex');
-        this.burst(p.x, p.y, s, this.quality === 'low' ? 8 : 16, 0xf4e8c6,
-          { speed: 2.4, life: 0.52, tex: 'slash', size: 0.5 });
-        break;
-      }
       case 'shell': {
         // 蕾缪安 S3: a shell fired now by `id` that lands at (x, y) after `t` game seconds (its 'bombard' explodes there)
         const flight = num(ex.t ?? ex.flight ?? ex.dur ?? ex.duration, 1) / ts;
@@ -129,8 +90,9 @@ export class FxSim {
       case 'wall': {
         // a line of burning tiles through the anchor tile along `axis` ('col' | 'row', from the sim event)
         const rect = this.ctx.fieldRect ? this.ctx.fieldRect() : null;
-        this.tileFlash(wallTiles(Number(x), Number(y), ex.axis === 'row' ? 'row' : 'col', rect), col, Math.max(0.6, dur || 1.5));
-        this.zone(at.x, at.y, at.z, 0.6, col, Math.max(0.6, dur || 1.5), spec.tex);
+        const owner = this._viewOf(ex.id);
+        this.tileFlash(wallTiles(Number(x), Number(y), ex.axis === 'row' ? 'row' : 'col', rect), col, Math.max(0.6, dur || 1.5), false,
+          owner ? { owner, axis: ex.axis, dir: ex.dir || owner.dir } : null);
         break;
       }
       case 'telegraph': {

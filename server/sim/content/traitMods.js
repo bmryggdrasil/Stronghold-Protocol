@@ -173,8 +173,6 @@ export function traitAttackSpeedRule(def) {
   if (!sources.length) return null;
   const value = num(sources[0].attack_speed);
   if (!value) return null;
-  const charId = def?.raw?.charId ?? def?.charId;
-  if (charId === 'char_4182_oblvns') return { value, condition: null, clause: '', source: null, reason: 'kit' };
   for (const text of traitClauses(def)) {
     const clause = conditionClause(text);
     if (!clause) continue;
