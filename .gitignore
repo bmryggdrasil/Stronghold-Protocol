@@ -44,6 +44,8 @@ plugins/*
 !plugins/README.md
 !plugins/AGENTS.md
 !plugins/_template/
+!plugins/op-oblvns/
+!plugins/op-makoto/
 
 # --- tests & logs ----------------------------------------------------------------------------------
 test/e2e/out/

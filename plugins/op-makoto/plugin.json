@@ -1,0 +1,30 @@
+{
+  "manifest": 2,
+  "id": "op-makoto",
+  "name": {
+    "zh": "干员拓展：结城理",
+    "en": "Operator: Makoto Yuki (P3R)"
+  },
+  "description": {
+    "zh": "解锁 Persona 3 Reload 联动 6★ 特种干员「结城理」，可在房间插件中开启并于自选编队中选择。",
+    "en": "Unlock 6★ Dollkeeper Special Makoto Yuki (Persona 3 Reload) as an optional room plugin."
+  },
+  "version": "1.0.0",
+  "app": ">=0.3.0 <0.4.0",
+  "api": 1,
+  "class": "content",
+  "scope": [
+    "room"
+  ],
+  "authors": [
+    "Stronghold-Protocol Community"
+  ],
+  "sourceLang": "zh",
+  "license": "CC-BY-NC-4.0",
+  "permissions": [
+    "data.add"
+  ],
+  "operators": [
+    "operators/makoto.json"
+  ]
+}

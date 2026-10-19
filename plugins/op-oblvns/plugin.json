@@ -1,0 +1,30 @@
+{
+  "manifest": 2,
+  "id": "op-oblvns",
+  "name": {
+    "zh": "干员拓展：丰川祥子",
+    "en": "Operator: Sakiko Togawa (Oblivionis)"
+  },
+  "description": {
+    "zh": "解锁 Ave Mujica 联动 6★ 近卫干员「丰川祥子」，可在房间插件中开启并于自选编队中选择。",
+    "en": "Unlock 6★ Lord Guard Sakiko Togawa (Ave Mujica) as an optional room plugin."
+  },
+  "version": "1.0.0",
+  "app": ">=0.3.0 <0.4.0",
+  "api": 1,
+  "class": "content",
+  "scope": [
+    "room"
+  ],
+  "authors": [
+    "Stronghold-Protocol Community"
+  ],
+  "sourceLang": "zh",
+  "license": "CC-BY-NC-4.0",
+  "permissions": [
+    "data.add"
+  ],
+  "operators": [
+    "operators/oblvns.json"
+  ]
+}

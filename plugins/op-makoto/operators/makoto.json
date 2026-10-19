@@ -1,0 +1,288 @@
+{
+  "op": 1,
+  "charId": "char_x_op_makoto_makoto",
+  "name": "结城理",
+  "appellation": "Makoto Yuki",
+  "profession": "SPECIAL",
+  "subProfessionId": "dollkeeper",
+  "subProfessionName": "傀儡师",
+  "position": "MELEE",
+  "rarity": 6,
+  "as": "diy",
+  "powers": [
+    "sees",
+    "laterano"
+  ],
+  "chess": {
+    "tier": 6,
+    "bonds": [
+      "emptyShip"
+    ]
+  },
+  "art": {
+    "ref": "char_4217_makoto",
+    "assets": {
+      "avatar": "char_4217_makoto",
+      "avatarGolden": "char_4217_makoto_2",
+      "portrait": "char_4217_makoto_1",
+      "portraitGolden": "char_4217_makoto_2",
+      "spine": "char_4217_makoto",
+      "voice": "char_4217_makoto",
+      "subProfIcon": "sub_dollkeeper_icon"
+    }
+  },
+  "forms": {
+    "normal": {
+      "stats": {
+        "maxHp": 2215,
+        "atk": 677,
+        "def": 253,
+        "res": 0,
+        "cost": 14,
+        "blockCnt": 2,
+        "bat": 1.2,
+        "aspd": 100,
+        "respawnTime": 70,
+        "spRecovery": 1,
+        "hpRecoveryPerSec": 0,
+        "moveSpeed": 1,
+        "tauntLevel": 0,
+        "massLevel": 0,
+        "deployLimit": 1,
+        "deckStack": 0
+      },
+      "rangeGrid": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "dmgType": "phys",
+      "attackKind": "melee"
+    },
+    "elite": {
+      "stats": {
+        "maxHp": 2606,
+        "atk": 771,
+        "def": 287,
+        "res": 0,
+        "cost": 14,
+        "blockCnt": 2,
+        "bat": 1.2,
+        "aspd": 100,
+        "respawnTime": 70,
+        "spRecovery": 1,
+        "hpRecoveryPerSec": 0,
+        "moveSpeed": 1,
+        "tauntLevel": 0,
+        "massLevel": 0,
+        "deployLimit": 1,
+        "deckStack": 0
+      },
+      "rangeGrid": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "dmgType": "phys",
+      "attackKind": "melee"
+    }
+  },
+  "trait": {
+    "desc": "受到致命伤时不撤退，切换成<替身>作战（替身阻挡数为0），持续20秒后自身再次替换<替身>",
+    "descRaw": "受到致命伤时不撤退，切换成<替身>作战（替身阻挡数为0），持续20秒后自身再次替换<替身>",
+    "bb": {
+      "duration": 20
+    },
+    "bbStr": {},
+    "rangeGrid": [
+      [
+        2,
+        0
+      ],
+      [
+        1,
+        -1
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        0,
+        -2
+      ],
+      [
+        0,
+        -1
+      ],
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        -1,
+        -1
+      ],
+      [
+        -1,
+        0
+      ],
+      [
+        -1,
+        1
+      ],
+      [
+        -2,
+        0
+      ]
+    ]
+  },
+  "talents": [
+    {
+      "index": 0,
+      "name": "不羁之力",
+      "desc": "结城理切换为<替身>状态时停顿周围一定范围内敌人8秒；<替身>状态下结城理召唤人格面具作战，攻击间隔增大，攻击力+85%（+5%），生命值+35%，作战能力随技能选择而改变",
+      "descRaw": "结城理切换为<替身>状态时<$ba.sluggish>停顿</>周围一定范围内敌人8秒；<替身>状态下结城理召唤人格面具作战，攻击间隔增大，攻击力+85%<@ba.talpu>（+5%）</>，生命值+35%，作战能力随技能选择而改变",
+      "bb": {
+        "atk": 0.85,
+        "base_attack_time": 0.4,
+        "sluggish": 8,
+        "max_hp_t1": 0.35
+      },
+      "bbStr": {
+        "range_id": "x-1"
+      },
+      "rangeGrid": null,
+      "tokenKey": null,
+      "hidden": false,
+      "fromModule": false,
+      "potMin": 4,
+      "potBelow": {
+        "desc": "结城理切换为<替身>状态时停顿周围一定范围内敌人8秒；<替身>状态下结城理召唤人格面具作战，攻击间隔增大，攻击力+80%，生命值+35%，作战能力随技能选择而改变",
+        "descRaw": "结城理切换为<替身>状态时<$ba.sluggish>停顿</>周围一定范围内敌人8秒；<替身>状态下结城理召唤人格面具作战，攻击间隔增大，攻击力+80%，生命值+35%，作战能力随技能选择而改变",
+        "bb": {
+          "atk": 0.8,
+          "base_attack_time": 0.4,
+          "sluggish": 8,
+          "max_hp_t1": 0.35
+        }
+      }
+    },
+    {
+      "index": 1,
+      "name": "S.E.E.S.队长",
+      "desc": "结城理<替身>状态结束后，带领S.E.E.S.小队发动总攻击，对S.E.E.S.小队队员周围一定范围内的所有敌人造成相当于结城理攻击力450%（+20%）的真实伤害（可叠加）",
+      "descRaw": "结城理<替身>状态结束后，带领<$ba.sees>S.E.E.S.</>小队发动总攻击，对<$ba.sees>S.E.E.S.</>小队队员周围一定范围内的所有敌人造成相当于结城理攻击力450%<@ba.talpu>（+20%）</>的真实伤害（可叠加）",
+      "bb": {
+        "atk_scale": 4.5,
+        "multi_attack_total_cnt": 1,
+        "final_damage_different_ratio": 1
+      },
+      "bbStr": {
+        "range_id": "x-1"
+      },
+      "rangeGrid": null,
+      "tokenKey": null,
+      "hidden": false,
+      "fromModule": false,
+      "potMin": 2,
+      "potBelow": {
+        "desc": "结城理<替身>状态结束后，带领S.E.E.S.小队发动总攻击，对S.E.E.S.小队队员周围一定范围内的所有敌人造成相当于结城理攻击力430%的真实伤害（可叠加）",
+        "descRaw": "结城理<替身>状态结束后，带领<$ba.sees>S.E.E.S.</>小队发动总攻击，对<$ba.sees>S.E.E.S.</>小队队员周围一定范围内的所有敌人造成相当于结城理攻击力430%的真实伤害（可叠加）",
+        "bb": {
+          "atk_scale": 4.3,
+          "multi_attack_total_cnt": 1,
+          "final_damage_different_ratio": 1
+        }
+      }
+    }
+  ],
+  "skills": [
+    {
+      "skillId": "skx_op_makoto_1",
+      "name": "俄耳甫斯的竖琴",
+      "desc": "被动：<替身>状态召唤俄耳甫斯，攻击对敌人造成攻击力150%的法术伤害，范围内有生命值低于50%的友方干员时，改为对其治疗相当于结城理攻击力40%的生命值\n主动：立即切换为<替身>状态作战",
+      "descRaw": "被动：<替身>状态召唤<@ba.vup>俄耳甫斯</>，攻击对敌人造成攻击力<@ba.vup>150%</>的法术伤害，范围内有生命值低于<@ba.vup>50%</>的友方干员时，改为对其治疗相当于结城理攻击力<@ba.vup>40%</>的生命值\n主动：立即切换为<替身>状态作战",
+      "skillType": "MANUAL",
+      "durationType": "NONE",
+      "duration": 0,
+      "spType": "INCREASE_WITH_TIME",
+      "spCost": 14,
+      "initSp": 0,
+      "maxChargeTime": 1,
+      "default": true,
+      "bb": {
+        "attack@atk_scale": 1.5,
+        "attack@heal_scale": 0.4
+      }
+    },
+    {
+      "skillId": "skx_op_makoto_2",
+      "name": "塔纳托斯的囚锁",
+      "desc": "被动：<替身>状态召唤塔纳托斯，攻击对至多3名敌人造成攻击力160%的法术伤害并有35%概率恐惧敌人1.5秒，范围内恐惧中的敌人若生命值低于结城理攻击力的230%则立刻倒下\n主动：立即切换为<替身>状态作战",
+      "descRaw": "被动：<替身>状态召唤<@ba.vup>塔纳托斯</>，攻击对至多<@ba.vup>3</>名敌人造成攻击力<@ba.vup>160%</>的法术伤害并有<@ba.vup>35%</>概率<$ba.fear>恐惧</>敌人<@ba.vup>1.5</>秒，范围内<$ba.fear>恐惧</>中的敌人若生命值低于结城理攻击力的<@ba.vup>230%</>则立刻倒下\n主动：立即切换为<替身>状态作战",
+      "skillType": "MANUAL",
+      "durationType": "NONE",
+      "duration": 0,
+      "spType": "INCREASE_WITH_TIME",
+      "spCost": 18,
+      "initSp": 3,
+      "maxChargeTime": 1,
+      "default": false,
+      "bb": {
+        "attack@max_target": 3,
+        "attack@atk_scale": 1.6,
+        "attack@prob": 0.35,
+        "attack@fear": 1.5,
+        "attack@kill_atk_scale": 2.3,
+        "attack@kill_damage": 9999999
+      }
+    },
+    {
+      "skillId": "skx_op_makoto_3",
+      "name": "开辟明日的剑刃",
+      "desc": "被动：<替身>状态初始召唤塔纳托斯，攻击速度+30，攻击对至多3名敌人造成攻击力170%的弱点伤害，塔纳托斯在场时，开启技能或受到致命伤时改为召唤俄耳甫斯，阻挡数+2，使范围内友方干员获得30%的物理与法术闪避并每秒治疗范围内最多3名友方干员相当于结城理攻击力25%的生命值，直到<替身>状态结束\n主动：立即切换为<替身>状态作战",
+      "descRaw": "被动：<替身>状态初始召唤<@ba.vup>塔纳托斯</>，攻击速度<@ba.vup>+30</>，攻击对至多<@ba.vup>3</>名敌人造成攻击力<@ba.vup>170%</>的<$ba.weaknessatk>弱点伤害</>，<@ba.vup>塔纳托斯</>在场时，开启技能或受到致命伤时改为召唤<@ba.vup>俄耳甫斯</>，阻挡数<@ba.vup>+2</>，使范围内友方干员获得<@ba.vup>30%</>的物理与法术闪避并每秒治疗范围内最多<@ba.vup>3</>名友方干员相当于结城理攻击力<@ba.vup>25%</>的生命值，直到<替身>状态结束\n主动：立即切换为<替身>状态作战",
+      "skillType": "MANUAL",
+      "durationType": "NONE",
+      "duration": 0,
+      "spType": "INCREASE_WITH_TIME",
+      "spCost": 20,
+      "initSp": 5,
+      "maxChargeTime": 1,
+      "default": false,
+      "bb": {
+        "talent@attack_speed": 30,
+        "attack@atk_scale": 1.7,
+        "attack@heal_scale": 0.25,
+        "attack@interval": 1,
+        "attack@prob": 0.3,
+        "attack@max_target": 3,
+        "attack@max_target_heal": 3,
+        "attack@block_cnt": 2
+      }
+    }
+  ]
+}

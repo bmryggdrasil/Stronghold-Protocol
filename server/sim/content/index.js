@@ -32,6 +32,7 @@ import { compileDsl } from './dsl/compile.js';
 import { validateSkillSpec, matchesSchema, MODS_SCHEMA } from '../../../shared/plugins/skillSpec.js';
 import { withUnitLoadouts } from '../simdata.js';
 import { isPotential } from '../../../shared/potential.js';
+import { CUSTOM_KITS } from './customKits.js';
 
 // Content files are loaded with guarded dynamic imports: a module that fails to load (syntax error, throwing
 // top-level code, missing file) is logged and replaced by an empty module instead of breaking the server.
@@ -118,7 +119,7 @@ export function kitOf(def, reg = KITS) {
   if (!def) return undefined;
   // Explicit Battle opts.kits retain their existing precedence and lookup-only semantics.
   if (reg !== KITS) return registeredKit(def, reg);
-  const ext = registeredKit(def, EXTENSIONS) ?? (def.charId?.startsWith('char_x_') ? EXTENSIONS[def.charId] : undefined);
+  const ext = registeredKit(def, EXTENSIONS) ?? (def.charId?.startsWith('char_x_') ? EXTENSIONS[def.charId] : undefined) ?? (CUSTOM_KITS && CUSTOM_KITS[def.charId]);
   if (ext) return ext;
   const raw = def.raw || {};
   if (raw.dsl != null) return (bb, chess, d) => bindDefaultSkill(compileDsl(raw.dsl, { bb, chess, def: d }), chess, d);

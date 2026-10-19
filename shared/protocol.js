@@ -405,16 +405,25 @@ export const isDiyPicks = (v) => isMap(v, DIY_LIMITS.slots, isId, isDiyPickWire)
  * @returns {{ ok: true, picks: Record<string, { charId: string, skillIndex: number, uniEquipId: string|null }>, dropped: number }
  *   | { error: 'BAD_MSG', detail: string }}
  */
+const DIY_CHAR_ALIASES = Object.freeze({
+  char_4182_oblvns: 'char_x_op_oblvns_oblvns',
+  char_4217_makoto: 'char_x_op_makoto_makoto',
+});
+
 export function checkDiyPicks(picks, { data, kitted = null } = { data: null }) {
   if (!isDiyPicks(picks)) return { error: 'BAD_MSG', detail: 'bad 自选 picks' };
   const slots = diySlotIds(data);
+  const backups = typeof data?.rawBackups === 'function' ? data.rawBackups() : data?.backups;
   /** @type {Record<string, { charId: string, skillIndex: number, uniEquipId: string|null }>} */
   const kept = {};
   let dropped = 0;
   for (const id of Object.keys(picks)) if (picks[id] != null && !slots.includes(id)) dropped++;
   for (const slotId of slots) {
-    const pick = Object.hasOwn(picks, slotId) ? picks[slotId] : null;
+    let pick = Object.hasOwn(picks, slotId) ? picks[slotId] : null;
     if (pick == null) continue;
+    if (DIY_CHAR_ALIASES[pick.charId] && !backups?.units?.[pick.charId] && backups?.units?.[DIY_CHAR_ALIASES[pick.charId]]) {
+      pick = { ...pick, charId: DIY_CHAR_ALIASES[pick.charId] };
+    }
     const res = validateDiyPicks({ ...kept, [slotId]: pick }, { data, kitted });
     if ('ok' in res) kept[slotId] = res.picks[slotId];
     else dropped++;
