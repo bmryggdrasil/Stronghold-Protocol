@@ -4,12 +4,19 @@
 // The message names the confirmed player too: a seat that changed hands while the host's dialog was open is refused.
 import { describe, test, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import { startServer } from '../server/index.js';
 import { StubMatch } from '../server/match/StubMatch.js';
 import { TestClient } from './helpers/wsClient.js';
 import { ERR } from '../shared/constants.js';
 import { validateC2S } from '../shared/protocol.js';
+
+// Kicking tests use vanilla rooms, independent of the server owner's installed plugins.
+const pluginsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-lobby-kick-'));
+after(() => fs.rmSync(pluginsDir, { recursive: true, force: true }));
 
 function clientPool(getUrl) {
   const open = new Set();
@@ -49,7 +56,7 @@ describe('room.kick (lobby)', () => {
   let pool;
   const cap = quietLog();
   before(async () => {
-    srv = await startServer({ port: 0, host: '127.0.0.1', log: cap.log, MatchClass: StubMatch, lobbyGraceMs: 60_000 });
+    srv = await startServer({ port: 0, host: '127.0.0.1', pluginsDir, log: cap.log, MatchClass: StubMatch, lobbyGraceMs: 60_000 });
     pool = clientPool(() => `ws://127.0.0.1:${srv.port}/ws`);
   });
   afterEach(async () => { await pool.closeAll(); });

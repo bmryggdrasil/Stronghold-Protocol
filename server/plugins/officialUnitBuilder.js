@@ -4,8 +4,10 @@ import { statusKey } from '../../shared/standIn.js';
 import { extendedGrid } from '../../shared/loadoutRecord.js';
 import { FULL_RANK } from '../../shared/potential.js';
 import { PLACE_ON_RANGED } from '../../shared/highGround.js';
+import { createPotentialAnnotator } from './officialPotential.js';
 
 export function createOfficialUnitBuilders(warn = () => {}) {
+const { withPotentialData } = createPotentialAnnotator(warn);
 // ===== text & blackboard helpers ================================================================
 
 /** Replace literal "\n" escape sequences used by skill texts with real newlines. */
@@ -794,7 +796,7 @@ function placeOnRangedOf(position, trait) {
 
 
 /** Derive an import-only unit with the exact builder paths; no downloads or writes on import.
- * Full potential and the caller's economy training statuses, no selected module. [ASSUMED]
+ * Full potential annotated for every lower potential, and the caller's economy training statuses; no selected module.
  * Official data is supplied by the caller, never by a workshop pack.
  */
 function deriveOfficialUnit(tables, charId, statuses) {
@@ -805,7 +807,10 @@ function deriveOfficialUnit(tables, charId, statuses) {
   for (const status of statuses) {
     if (!char.phases?.[status.phase]?.attributesKeyFrames?.length) throw new Error(`official attributes missing for ${charId} phase ${status.phase}`);
     for (const s of char.skills ?? []) if (s?.skillId && unlocked(s.unlockCond, status.phase, status.level) && !ctx.skillTable?.[s.skillId]?.levels?.length) throw new Error(`official skill ${s.skillId} missing for ${charId}`);
-    const f = buildUnitForm(ctx, charId, status);
+    const passes = Array.from({ length: FULL_RANK + 1 }, (_, potRank) => buildUnitForm({ ...ctx, potRank }, charId, status));
+    const errors = [];
+    const f = withPotentialData(passes, `unit ${charId}@${statusKey(status)}`, errors);
+    if (errors.length) throw new Error(errors.join('; '));
     if (!f.stats || !f.rangeGrid || !f.skills.length) throw new Error(`official stats, range or skills missing for ${charId}`);
     unit.forms[statusKey(status)] = f;
   }

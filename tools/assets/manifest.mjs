@@ -167,8 +167,7 @@ export function mergeOperatorManifest(current, partial, charId) {
   for (const key of ['version', 'hash', 'generator', 'stats']) delete out[key];
   const merge = (a, b) => Object.assign(a || {}, b || {});
   const oldSfx = out.audio?.sfx || {};
-  const oldVoice = out.audio?.voice || {};
-  const oldVoiceJp = out.audio?.voiceJp || {};
+  const oldAudio = out.audio || {};
   out.chars = { ...(out.chars || {}), [charId]: partial.chars[charId] };
   out.skills = merge(out.skills, partial.skills);
   out.skillsById = merge(out.skillsById, partial.skillsById);
@@ -176,9 +175,10 @@ export function mergeOperatorManifest(current, partial, charId) {
   out.prof = { ...(out.prof || {}), sub: merge(out.prof?.sub, partial.prof?.sub) };
   out.audio = { ...(out.audio || {}), ...(partial.audio || {}) };
   if (partial.audio?.sfx) out.audio.sfx = { ...oldSfx, ...partial.audio.sfx,
-    units: merge(oldSfx.units, partial.audio.sfx.units) };
-  if (partial.audio?.voice) out.audio.voice = merge(oldVoice, partial.audio.voice);
-  if (partial.audio?.voiceJp) out.audio.voiceJp = merge(oldVoiceJp, partial.audio.voiceJp);
+    units: merge(oldSfx.units, partial.audio.sfx.units), pools: merge(oldSfx.pools, partial.audio.sfx.pools) };
+  for (const key of ['voice', 'voiceJp', 'voiceEn', 'voiceKr', 'voiceNative', 'voiceNativeLangType']) {
+    if (partial.audio?.[key]) out.audio[key] = merge(oldAudio[key], partial.audio[key]);
+  }
   return out;
 }
 

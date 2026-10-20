@@ -192,7 +192,7 @@ exists) gets no section rather than an empty grid.
   740×360 … 932×430) while the 1:2 tile is 264–379 px there, which made 皮肤 the ONE section of that panel a phone could
   not see whole (潜能与练度 / 技能 / 局内数值 / 模组 are 135–163 px in the same panel). Both images of a tile are in the DOM
   (`public/js/ui/skinPicker.js`, `availableSkins().avatar`) and CSS alone decides, so no resize listener and no re-render;
-  273/273 of the installed skins ship an `avatar` of their own (measured), and a row whose manifest has none keeps its
+  278/278 of the installed skins ship an `avatar` of their own (measured), and a row whose manifest has none keeps its
   portrait on every screen. A 1:2 box is still what every wider panel draws, with `min-height: max(1.5rem, 130px)` as
   the floor of a narrow one. Portrait is not a case to solve: a portrait phone is covered by 「请将设备横屏」
   (`public/index.html .rotate-hint`, shown by `public/css/theme.css`
@@ -208,3 +208,51 @@ exists) gets no section rather than an empty grid.
 - **A 自选 slot's own record has `charId: null`**, so it wears its **pick's** operator's skin — the slot has no body of
   its own. The picker offers the appearance while picking that operator, and the choice is kept per operator, so
   changing the slot's operator changes the appearance with it.
+
+## Owner-side official outfit installation
+
+The picker and per-seat protocol already ship in 0.3.1; an installation with no cosmetic outfit plugin has no wearable
+choices, so its skin section is hidden. Installing the code alone does not install outfits. The explicit maintenance
+tool below reads the official `skin_table.json`, matches this installation's operators (including installed content
+operators' `art.ref`), and creates checked cosmetic plugins. It never runs inside the game server and adds no download
+message or public installation endpoint.
+
+```sh
+node tools/install-official-skins.mjs --dry-run
+node tools/install-official-skins.mjs --asset-source=mirror --concurrency=16
+node tools/plugin.mjs check official-skins-01 official-skins-02 --strict
+```
+
+The default sources are the same client-resource dumps used by the asset pipeline: the official table from
+`Kengxxiao/ArknightsGameData`, battle models and pictures indexed by `fexli/ArknightsResource`, and newer small portraits
+from `yuanyan3060/ArknightsGameResource`. `--asset-source=mirror` explicitly opts into the existing GitHub proxy policy.
+Indexed files are checked against their Git blob SHA-1 before installation; atlases are normalized to their actual PNG
+dimensions and the normal plugin packer parses/locks every skeleton. Missing or altered required files stop the run;
+rerunning resumes completed downloads. `--offline` uses the cached indexes and files; `--refresh-index` updates the
+official table and resource tree when installing newer outfits. Generated files stay under
+`.cache/official-skins/` and `plugins/official-skins-*/`, both ignored by Git. `data/*.json` is never modified.
+
+At the 2026-10-20 installation, 278 outfits for 176 operator bodies are available, including 丰川祥子「旋律的主人」 and
+结城理「见证荣光」. They form two plugins, `official-skins-01` and `official-skins-02`, with 249,895,376 bytes (238.3 MiB)
+of art; both may be enabled together within the existing 300 MB visual-set limit. Put these IDs in the server owner's
+`plugins/config.json` `default` list for new
+rooms to offer them immediately, or enable them in a room's 插件 panel. Players may also enable them for their browser
+in 设置 → 外观插件. Then select the outfit in 干员调配 or 自选编队; the default appearance remains an ordinary choice.
+Namespaced plugin operators resolve the catalogue through their `assets.spine` art body, while storing and publishing
+their selection under their own `charId`. This covers the two operator plugins and Forge operators borrowing official art.
+
+[ASSUMED] The standard complete catalogue installs Front battle models and small portraits/avatars. It also installs
+the true Back models for the two integrated operators (`char_4182_oblvns` and `char_4217_makoto`), so 丰川祥子「旋律的主人」
+and 结城理「见证荣光」 have the correct rear view when facing upward. For the other 276 outfits, a skin's Back entry
+reuses its Front model without duplicating files; the outfit is retained but its rear angle is approximate. This keeps
+all outfits available within the 300 MB visual-set cap: full Front + Back models for the whole catalogue exceed that
+limit. Full-resolution illustrations add roughly 1.6 GB and are omitted by
+default; enlarged previews use the installed portrait. For a selected operator subset, `--only-operator char_<id>` may
+be repeated, with `--back` and/or `--illustrations` to install true rear models or original illustrations. The tool refuses
+a selection estimated above 285 MB, leaving room for the plugin metadata. Use a separate `--root` installation when
+building a different subset; replacing an existing generated plugin preserves its former folder in `plugins/_replaced/`.
+
+Deploy the generated plugin folders, including `plugin.json`, `assets.json`, `plugin.lock.json` and `files/`, together
+with the owner's plugin configuration. Download caches are unnecessary on the receiving server. A Git pull alone cannot
+deploy these ignored resources. The CLI's report is saved at `.cache/official-skins/report.json`; verify the resulting
+combined visual set before enabling additional room cosmetics, which share the same size budget.

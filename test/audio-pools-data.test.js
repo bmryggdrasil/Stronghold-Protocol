@@ -52,8 +52,8 @@ test('every generated attack/hit reference resolves to a valid pool and its sele
       }
     }
   }
-  assert.equal(refs, 952); // 0.3.1 release fetch-assets: + 琳琅诗怀雅 S3, 刻俄柏, 风丸 attacks and 松果's hit (their official pools)
-  assert.equal(Object.keys(pools).length, 941); // + the four pools above
+  assert.equal(refs, 961); // 952 release references + 3 Sakiko and 6 Makoto references from installed plugins.
+  assert.equal(Object.keys(pools).length, 954); // 941 release pools + 9 collaboration and 4 current official attack/hit banks.
   const p = pools[units.char_4064_mlynar.attackPools[2]];
   assert.equal(p.sounds['player/p_imp/p_imp_loyalsword_h.mp3'].delay, 0.1);
 });

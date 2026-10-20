@@ -14,6 +14,7 @@ import { dataExtras, orphanFiles, parseArgs } from '../tools/fetch-assets.mjs';
 import { patternOperator, buildPlan } from '../tools/assets/plan.mjs';
 import { indexAudio } from '../tools/assets/audio.mjs';
 import { Downloader } from '../tools/assets/downloader.mjs';
+import { installedFxReferences } from '../server/plugins/fxReferences.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const load = (f) => JSON.parse(readFileSync(join(ROOT, 'data', `${f}.json`), 'utf8'));
@@ -119,11 +120,13 @@ test('the committed data/assets.json lists every 自选 operator\'s avatar, port
   assert.equal(m.stats.modules, Object.keys(m.modules).length);
 });
 
-test('an operator left out of 自选 (data/backups.json diy.excluded: the collab picks, 焰狐龙梓兰 MH05 among them) keeps no art in data/assets.json, so the full release zip (tools/package.mjs) never ships it', () => {
+test('excluded collab operators keep no bundled art unless an installed plugin explicitly requests their official assets', () => {
   const m = load('assets');
   const text = JSON.stringify(m);
+  const requested = new Set(installedFxReferences(ROOT, { artPhases: true }));
   assert.ok(BACKUPS.diy.excluded.includes('char_1048_orchd2'), '焰狐龙梓兰 is excluded');
   for (const id of BACKUPS.diy.excluded) {
+    if (requested.has(id)) continue;
     const code = id.split('_').slice(2).join('_');
     assert.equal(m.chars[id], undefined, `${id}: chars`);
     assert.equal(m.audio.sfx.units[id], undefined, `${id}: unit sfx`);

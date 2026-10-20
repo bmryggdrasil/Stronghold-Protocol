@@ -40,6 +40,11 @@ test('all install and favicon assets ship independently of optional game art', (
 // hermetic scans: not this machine's account name, but a planted one
 const ENV = { SP_PACKAGE_SCAN_USER: '0', SP_PACKAGE_SCAN_NAMES: 'plantedname' };
 
+test('owner outfit installation remains available in both player release selections', () => {
+  const file = 'tools/install-official-skins.mjs';
+  assert.deepEqual(selectTracked([file]).keep, [file]);
+});
+
 test('selection: runtime files in; tests, maintainer tools, other docs, dev pages, private and config files out', () => {
   const { keep, drop } = selectTracked([
     'server/index.js', 'server/sim/rng.js', 'shared/constants.js', 'public/index.html', 'public/js/main.js', 'public/i18n/en.json',
@@ -523,7 +528,7 @@ test('a --assets build zips exactly the plan and README.txt in one folder, and t
     const zip = path.join(out, `${name}.zip`);
     assert.deepEqual(fs.readdirSync(out), [`${name}.zip`], 'the stage is removed after zipping');
     if (hasUnzip) {
-      const entries = spawnSync('unzip', ['-Z1', zip], { encoding: 'utf8' }).stdout.split('\n').filter((l) => l && !l.endsWith('/'));
+      const entries = spawnSync('unzip', ['-Z1', zip], { encoding: 'utf8' }).stdout.split(/\r?\n/).filter((l) => l && !l.endsWith('/'));
       assert.deepEqual(entries.sort(), [...PACK_ART, ASSET_PACK_README].map((f) => `${name}/${f}`).sort());
     }
     const again = runTool(['--root', dir, '--assets', '--out', out]);

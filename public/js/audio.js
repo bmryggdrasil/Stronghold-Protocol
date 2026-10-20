@@ -1295,12 +1295,13 @@ export class AudioManager {
     try {
       if (!this.ctx || !this.voiceGain || this.volumes.muted || this.volumes.voice <= 0) return false;
       if (typeof charId !== 'string') return false;
-      const slots = this.getManifest()?.audio?.voice?.[charId];
+      const audio = this.getManifest()?.audio;
+      const resolved = VOICE_PICKS.includes(lang) ? lang : this._voiceLangOf(charId);
+      const slots = audio?.[VOICE_TREES[resolved] || 'voice']?.[charId] || audio?.voice?.[charId];
       if (!slots || typeof slots !== 'object') return false;
       const slot = ['select', 'place', 'start'].find((s) => slots[s]) || Object.keys(slots)[0];
       if (!slot) return false;
-      const resolved = VOICE_PICKS.includes(lang) ? lang : this._voiceLangOf(charId);
-      const line = voiceLine(this.getManifest()?.audio, charId, slot, resolved);
+      const line = voiceLine(audio, charId, slot, resolved);
       if (!line) return false;
       this._stopVoice();
       this.voiceGate.start(slot, null, typeof performance !== 'undefined' ? performance.now() : Date.now());

@@ -375,7 +375,43 @@ const PRISONER_COLOURED = prisoner('_orange', '_red');
 const dollRoles = (idle, die, attack = null) => Object.freeze({
   idle, deploy: idle, die, attack: attack ? Object.freeze({ begin: null, loop: attack, end: null }) : null, attackDown: null, skill: null,
 });
+const makotoRoles = (idle, die, attack, stun) => Object.freeze({
+  idle, deploy: idle, die, attack: attack ? loop(attack, 'attackAny') : null, attackDown: null, skill: null,
+  stun: loop(stun),
+});
+const MAKOTO_ORPHEUS = makotoRoles('Doll_Skill_1_Idle', 'Doll_Skill_1_Die', 'Doll_Skill_1_Attack', 'Doll_Skill_1_Stun');
+const MAKOTO_THANATOS = makotoRoles('Doll_Skill_2_Loop', 'Doll_Skill_2_Die', 'Doll_Skill_2_Loop', 'Doll_Skill_2_Stun');
+const MAKOTO_THANATOS_S3 = makotoRoles('Doll_Skill_3_P1_Idle', 'Doll_Skill_3_P2_Die', 'Doll_Skill_3_P1_Attack_A', 'Doll_Skill_3_P1_Stun');
+const MAKOTO_ORPHEUS_S3 = makotoRoles('Doll_Skill_3_P2_Loop', 'Doll_Skill_3_P2_Die', 'Doll_Skill_3_P2_Loop', 'Doll_Skill_3_P2_Stun');
+const MAKOTO_ORPHEUS_S3_MOD = Object.freeze({ ...MAKOTO_ORPHEUS_S3, attack: null });
+// S2's A instrument is piano, B organ. In both official outfits the attachment timelines show Trans_A goes A→B,
+// Trans_B goes B→A. A cosmetic model lacking either stance clip keeps its own manifest roles.
+const oblvnsS2 = (side, change) => Object.freeze({
+  change, requires: Object.freeze([`Skill_2_Idle_${side}`, `Skill_2_Loop_${side}`]),
+  roles: Object.freeze({ idle: `Skill_2_Idle_${side}`, attack: loop(`Skill_2_Loop_${side}`), attackDown: null, skill: null }),
+});
 export const FORMS = Object.freeze({
+  char_4182_oblvns: Object.freeze({
+    oblvnsS2Piano: oblvnsS2('A', 'Skill_2_Trans_B'),
+    oblvnsS2Organ: oblvnsS2('B', 'Skill_2_Trans_A'),
+  }),
+  char_4217_makoto: Object.freeze({
+    makotoS1Orpheus: Object.freeze({ change: 'Doll_Skill_1_SwitchIn', leave: 'Doll_Skill_1_SwitchOut', roles: MAKOTO_ORPHEUS }),
+    makotoS2Thanatos: Object.freeze({ change: 'Doll_Skill_2_SwitchIn', leave: 'Doll_Skill_2_SwitchOut', roles: MAKOTO_THANATOS }),
+    makotoS3Thanatos: Object.freeze({ change: 'Doll_Skill_3_P1_SwitchIn', leave: 'Doll_Skill_3_P1_SwitchOut', roles: MAKOTO_THANATOS_S3 }),
+    makotoS3ThanatosToOrpheus: Object.freeze({
+      change: 'Doll_Skill_3_P1toP2_ChangeBegin', end: 'Doll_Skill_3_P1toP2_ChangeEnd',
+      next: 'makotoS3Orpheus', leave: 'Doll_Skill_3_P2_SwitchOut', roles: MAKOTO_THANATOS_S3,
+    }),
+    makotoS3Orpheus: Object.freeze({ roles: MAKOTO_ORPHEUS_S3, leave: 'Doll_Skill_3_P2_SwitchOut' }),
+    makotoS3OrpheusModified: Object.freeze({ roles: MAKOTO_ORPHEUS_S3_MOD, leave: 'Doll_Skill_3_P2_SwitchOut' }),
+    makotoAllOut: Object.freeze({
+      change: 'Skill_AllOutAttack_Loop', end: 'Skill_AllOutAttack_End', next: 'makotoBody',
+      roles: Object.freeze({ idle: 'Skill_AllOutAttack_Loop', deploy: 'Skill_AllOutAttack_Loop', move: loop('Skill_AllOutAttack_Loop') }),
+    }),
+    makotoBody: Object.freeze({ roles: Object.freeze({}) }),
+  }),
+
   [MANIFOLD]: Object.freeze({
     Default: Object.freeze({ roles: { ...clipSet('Idle_1', null, 'Stun', 'Attack'), deploy: 'Start', stun: loop('Stun') } }),
     Melee: Object.freeze({ change: 'Change_A', combat: 'A_Combat', roles: { ...clipSet('A_Idle', null, 'Die', 'A_Attack'), deploy: 'A_Start', stun: loop('A_Stun'), attackDown: null } }),
@@ -1000,6 +1036,7 @@ export class UnitView {
   _formSpec() {
     const form = this.form || (isManifold(this.info) ? 'Default' : null);
     const f = form ? FORMS[this.info.spine || this.info.defId]?.[form] || null : null;
+    if (f?.requires && this.actor && f.requires.some(name => !this.actor.has(name))) return null;
     if (f?.combat && this._manifoldCombat) return { ...f, roles: { ...f.roles, attack: loop(f.combat), skill: { ...f.roles.skill, loop: f.combat } } };
     return f;
   }
@@ -1794,18 +1831,21 @@ export class UnitView {
     let sy = 0;
     if (showSp) {
       const active = !!(this.flags & UF.SKILL);
-      const k = ammo ? ammo[0] / ammo[1] : clamp(this.sp / this.spMax, 0, 1);
+      const isFever = this.statuses && (this.statuses.has('fever') || this.statuses.has('feverState'));
+      const k = isFever ? 1 : ammo ? ammo[0] / ammo[1] : clamp(this.sp / this.spMax, 0, 1);
       ready = !active && k >= 0.999;
       sy = cy + bh / 2 + spH / 2 + 1.5;
       this.spBg.position.set(x0 - 1, sy); this.spBg.width = bw + 2; this.spBg.height = spH + 2;
       this.spFill.position.set(x0, sy); this.spFill.width = bw * k; this.spFill.height = spH;
-      this.spFill.tint = ammo ? COLORS.ammo : active ? COLORS.spActive : ready ? COLORS.spReady : COLORS.sp;
+      this.spFill.tint = isFever ? 0xff4bb8 : ammo ? COLORS.ammo : active ? COLORS.spActive : ready ? COLORS.spReady : COLORS.sp;
       this._spY = sy;
     }
     this._updateAmmoCuts(showSp && !!ammo, ammo, x0, sy, bw, spH);
-    this.spGlow.visible = ready;
-    if (ready) {
-      const pulse = 0.55 + 0.35 * Math.sin(t * 6);
+    const isFever = this.statuses && (this.statuses.has('fever') || this.statuses.has('feverState'));
+    this.spGlow.visible = showSp && (ready || isFever);
+    if (this.spGlow.visible) {
+      const pulse = 0.55 + 0.35 * Math.sin(t * (isFever ? 10 : 6));
+      this.spGlow.tint = isFever ? 0xff4bb8 : 0xffffff;
       this.spGlow.position.set(x0 + bw, this._spY);
       this.spGlow.scale.set((spH * 5) / 128);
       this.spGlow.alpha = pulse;

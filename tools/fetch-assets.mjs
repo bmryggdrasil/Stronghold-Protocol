@@ -67,12 +67,14 @@ import { MirrorPolicy, selectDownloadSource, validateSource } from './assets/net
 import { normalizeProxyPrefix } from './assets/sources.mjs';
 import { loadIndexes } from './assets/cache.mjs';
 import { indexAudio, VOICE_DIRS } from './assets/audio.mjs';
-import { buildPlan, charModesFromIndex, VOICE_OPTIONAL_TREES } from './assets/plan.mjs';
+import { buildPlan, charModesFromIndex, onlyOperatorPlan, VOICE_OPTIONAL_TREES } from './assets/plan.mjs';
+import { installedArtReferences } from '../server/plugins/artReferences.js';
+import { preparePluginOfficialTables } from './assets/official-tables.mjs';
 import {
   processModels, findLocalEnemyModels, findLocalTokenModels, localSpineMeta, loadLocalSpines, LOCAL_ENEMY_SPINES_FILE,
   LOCAL_TOKEN_SPINES_FILE, LOCAL_ENEMY_SPINE_DIR, LOCAL_TOKEN_SPINE_DIR,
 } from './assets/spine.mjs';
-import { collectLeaves, downloadLeaves, resolveTemplate, totalBytes, contentHash, droppedEntries, MANIFEST_VERSION } from './assets/manifest.mjs';
+import { collectLeaves, downloadLeaves, resolveTemplate, mergeOperatorManifest, totalBytes, contentHash, droppedEntries, MANIFEST_VERSION } from './assets/manifest.mjs';
 import { fontJobs, buildFonts } from './assets/fonts.mjs';
 import { statsTemplateJobs } from './assets/stats-template.mjs';
 import { skelParserAvailable } from './assets/skel.mjs';
@@ -109,6 +111,7 @@ const HELP = `Usage: node tools/fetch-assets.mjs [options]
                     (incompatible with --offline / --add-only / --local-spines)
   --offline         no network: post-process what is on disk and rebuild data/assets.json
   --dry-run         print the plan and exit
+  --only-operator=ID add/update one planned operator, preserving every unrelated manifest entry
   --refresh-index   re-download the audio_data.json / charword_table.json / models_data.json indexes
   --voice-lang=cn   the dub of audio.voice (the 中文 voice setting): cn (default) | jp | en | kr
                     (audio.voiceJp, the 日本語 setting, is always the JP dub: both trees are planned)
@@ -149,10 +152,10 @@ function envFlag(value) {
 /**
  * Parse CLI flags.
  * @param {string[]} argv
- * @returns {{concurrency:number, force:boolean, offline:boolean, dryRun:boolean, refreshIndex:boolean, prune:boolean, allowShrink:boolean, strict:boolean, addOnly:boolean, localSpines:boolean, voiceLang:string, voiceAll:boolean, optionalVoice:boolean, help:boolean, source:string, sourceSnapshot:string}}
+ * @returns {{concurrency:number, force:boolean, offline:boolean, dryRun:boolean, refreshIndex:boolean, prune:boolean, allowShrink:boolean, strict:boolean, addOnly:boolean, localSpines:boolean, voiceLang:string, voiceAll:boolean, optionalVoice:boolean, help:boolean, source:string, sourceSnapshot:string, onlyOperator:string}}
  */
 export function parseArgs(argv) {
-  const o = { concurrency: 16, force: false, offline: false, dryRun: false, refreshIndex: false, prune: false, allowShrink: false, strict: envFlag(process.env.SP_ASSETS_STRICT), addOnly: false, localSpines: false, voiceLang: 'cn', voiceAll: false, optionalVoice: true, help: false, source: process.env.SP_ASSET_SOURCE || 'direct', sourceSnapshot: '' };
+  const o = { concurrency: 16, force: false, offline: false, dryRun: false, refreshIndex: false, prune: false, allowShrink: false, strict: envFlag(process.env.SP_ASSETS_STRICT), addOnly: false, localSpines: false, voiceLang: 'cn', voiceAll: false, optionalVoice: true, help: false, source: process.env.SP_ASSET_SOURCE || 'direct', sourceSnapshot: '', onlyOperator: '' };
   for (const a of argv) {
     const [k, v] = a.split('=');
     if (k === '--concurrency') o.concurrency = Math.max(1, Math.min(64, parseInt(v, 10) || 16));
@@ -161,6 +164,7 @@ export function parseArgs(argv) {
     else if (k === '--force') o.force = true;
     else if (k === '--offline') o.offline = true;
     else if (k === '--dry-run') o.dryRun = true;
+    else if (k === '--only-operator') { if (!/^char_\d+_[a-z0-9]+$/.test(v || '')) throw new Error('--only-operator requires an official charId'); o.onlyOperator = v; }
     else if (k === '--refresh-index') o.refreshIndex = true;
     else if (k === '--prune') o.prune = true;
     else if (k === '--allow-shrink') o.allowShrink = true;
@@ -174,6 +178,7 @@ export function parseArgs(argv) {
     else throw new Error(`unknown option ${a}\n${HELP}`);
   }
   if (o.addOnly && (o.prune || o.force)) throw new Error(`--add-only never deletes or rewrites files: not with --prune / --force\n${HELP}`);
+  if (o.onlyOperator && o.prune) throw new Error('--only-operator preserves unrelated assets: not with --prune');
   if (o.sourceSnapshot && (o.offline || o.addOnly || o.localSpines)) throw new Error('--source-snapshot is incompatible with --offline / --add-only / --local-spines');
   if (!o.help) validateSource(o.source);
   return o;
@@ -204,6 +209,18 @@ export function dataExtras(backups, chess) {
   }
   for (const c of Object.values(chess || {})) for (const m of c?.modules || []) if (m.typeIcon) moduleTypes.add(m.typeIcon);
   return { extraOperators, tokenIds: Object.keys(backups?.tokens || {}).sort(), moduleTypes: [...moduleTypes].sort() };
+}
+
+/** Installed plugins' official references use the same bounded discovery and table membership as local extraction.
+ * No plugin code executes. The official skills retain their icons and audio-bank identities. */
+export async function pluginOperatorExtras(root) {
+  const table = await readFile(join(root, '.cache/gamedata/excel/character_table.json'), 'utf8').then(JSON.parse).catch(() => ({}));
+  const skills = await readFile(join(root, '.cache/gamedata/excel/skill_table.json'), 'utf8').then(JSON.parse).catch(() => ({}));
+  return Object.fromEntries(installedArtReferences(root).map(id => {
+    const row = table[id];
+    return [id, { name: row.name, subProfessionId: row.subProfessionId, nationId: row.nationId,
+      skills: (row.skills || []).map((s, index) => ({ index, skillId: s.skillId, iconId: skills[s.skillId]?.iconId || s.skillId })) }];
+  }));
 }
 
 /**
@@ -420,6 +437,7 @@ async function main() {
   const source = await selectDownloadSource({ mode: opts.source, offline: opts.offline, proxyPrefix, log, verified: !!verifier });
   const mirrorPolicy = new MirrorPolicy({ source, proxyPrefix, log });
   const network = { source, proxyPrefix, mirrorPolicy, verifier };
+  await preparePluginOfficialTables(ROOT, { ...network, offline: opts.offline, check: opts.dryRun, refresh: opts.refreshIndex, log });
   const { audioData, modelsData, charword } = await loadIndexes(ROOT, { refresh: opts.refreshIndex && !opts.offline, offline: opts.offline, log, ...network });
   const audio = indexAudio(audioData);
   // Skill attack slots follow each operator's mode list when the local fx index is on disk (#679). It is a client
@@ -438,12 +456,15 @@ async function main() {
   const [dataEnemies, dataTokens, dataBosses, dataBackups, dataChess] = await Promise.all(
     ['data/enemies.json', 'data/tokens.json', 'data/bosses.json', 'data/backups.json', 'data/chess.json'].map((f) => readJson(f).catch(() => null)));
   const extras = dataExtras(dataBackups, dataChess);
+  const pluginOperators = await pluginOperatorExtras(ROOT);
+  Object.assign(extras.extraOperators, pluginOperators);
+  if (Object.keys(pluginOperators).length) log(`[plugins] official art/audio references: ${Object.keys(pluginOperators).join(', ')}`);
   const extraHandbook = {};
   for (const b of Object.values(dataBosses || {})) if (b?.enemyKey && typeof b.handbookId === 'string') extraHandbook[b.enemyKey] = b.handbookId;
   const localEnemySpines = await syncLocalSpines(opts, 'enemy');
   const localTokenSpines = await syncLocalSpines(opts, 'token');
   const statsTemplate = await statsTemplateJobs(ROOT, { offline: opts.offline || opts.dryRun, log });
-  const plan = buildPlan({
+  let plan = buildPlan({
     assets07, ops03, enemies05, maps05, audio, modelsData, charword, voiceLang: opts.voiceLang,
     // default: only the slots a battle can play (plan.mjs VOICE_BATTLE_SLOTS); --voice-all takes the whole official set
     voiceSlots: opts.voiceAll ? null : undefined,
@@ -458,12 +479,13 @@ async function main() {
     statsTemplate,
     charModes,
   });
+  if (opts.onlyOperator) plan = onlyOperatorPlan(plan, opts.onlyOperator, extras.extraOperators[opts.onlyOperator]?.subProfessionId);
   const leaves = collectLeaves(plan.template);
   log(`[plan] ${leaves.length} files + ${plan.models.size} Spine models ` +
     `(${Object.keys(plan.template.chars).length} chars, ${Object.keys(plan.template.enemies).length} enemies, ` +
     `${Object.keys(plan.template.tokens).length} tokens, ${Object.keys(plan.template.ui).length} UI sprites, ` +
-    `${Object.keys(plan.template.audio.sfx.units).length} units with SFX, ` +
-    `${Object.keys(plan.template.audio.voice).length} operators with ${opts.voiceLang.toUpperCase()} voice, ` +
+    `${Object.keys(plan.template.audio.sfx?.units || {}).length} units with SFX, ` +
+    `${Object.keys(plan.template.audio.voice || {}).length} operators with ${opts.voiceLang.toUpperCase()} voice, ` +
     `${Object.keys(plan.template.audio.voiceJp || {}).length} with JP voice, ` +
     `${Object.keys(plan.template.audio.voiceEn || {}).length} with EN, ` +
     `${Object.keys(plan.template.audio.voiceKr || {}).length} with KR, ` +
@@ -488,7 +510,7 @@ async function main() {
   // Fonts (--add-only: not rebuilt — public/fonts may be another checkout's; the manifest keeps its current entry)
   let fontErrors = [];
   let acceptedFonts;
-  if (!opts.offline && !opts.addOnly) {
+  if (!opts.offline && !opts.addOnly && !opts.onlyOperator) {
     const fdl = new Downloader({ root: FONTS, ledgerPath: join(CACHE, 'fonts-ledger.json'), concurrency: 4, force: opts.force, log, ...network });
     await fdl.loadLedger();
     await fdl.run(fontJobs(), 'fonts');
@@ -496,7 +518,7 @@ async function main() {
     dl.totals.bytesDownloaded += fdl.totals.bytesDownloaded;
     for (const k of ['ok', 'skip', 'miss', 'error']) dl.totals[k] += fdl.totals[k];
   }
-  const fonts = opts.addOnly ? { files: {}, errors: [] } : await buildFonts(FONTS, log, {
+  const fonts = opts.addOnly || opts.onlyOperator ? { files: {}, errors: [] } : await buildFonts(FONTS, log, {
     verified: !!verifier,
     ...(verifier ? { available: (rel) => acceptedFonts.has(rel) } : null),
   });
@@ -513,29 +535,36 @@ async function main() {
     root: ASSETS, spine: spine.entries, sourceOf: (rel) => dl.ledger.files[rel]?.url,
     ...(verifier ? { available: (rel) => dl.accepted.has(rel) } : null),
   });
-  const body = resolved.value;
+  let body = resolved.value;
   tidyManifest(body);
   tidyVoiceTrees(body);
   const fontFaces = {};
   for (const [name, f] of Object.entries(fonts.files)) fontFaces[name] = f;
-  body.fonts = opts.addOnly && current?.fonts ? current.fonts
+  body.fonts = (opts.addOnly || opts.onlyOperator) && current?.fonts ? current.fonts
     : (verifier ? fonts.css : existsSync(join(FONTS, 'fonts.css'))) ? { css: '/fonts/fonts.css', faces: fontFaces } : { faces: fontFaces };
-  const bytes = totalBytes(ASSETS, resolved.files);
+  if (opts.onlyOperator && current) body = mergeOperatorManifest(current, body, opts.onlyOperator);
+  const publishedFiles = new Set(resolved.files);
+  const collectPublished = value => {
+    if (typeof value === 'string' && value.startsWith('/assets/')) publishedFiles.add(value.slice('/assets/'.length));
+    else if (value && typeof value === 'object') for (const item of Object.values(value)) collectPublished(item);
+  };
+  if (opts.onlyOperator) collectPublished(body);
+  const bytes = totalBytes(ASSETS, publishedFiles);
   const manifest = {
     version: MANIFEST_VERSION,
     hash: contentHash(body),
     generator: 'tools/fetch-assets.mjs',
-    stats: countStats(body, bytes, resolved.files.size),
+    stats: countStats(body, bytes, publishedFiles.size),
     ...body,
   };
   const guard = shrinkGuard(current, manifest, opts);
   if (guard.write) await writeJsonAtomic(MANIFEST, manifest);
 
   // Orphans: files on disk that the manifest does not reference (e.g. after a mapping change).
-  const orphans = orphanFiles(await listFiles(ASSETS), new Set([...resolved.files, ...dl.preserved]));
+  const orphans = opts.onlyOperator ? [] : orphanFiles(await listFiles(ASSETS), new Set([...resolved.files, ...dl.preserved]));
   if (opts.prune) for (const r of orphans) { try { await unlink(join(ASSETS, r)); } catch { /* ignore */ } }
 
-  const charIds = Object.keys(assets07.operators || {});
+  const charIds = opts.onlyOperator ? [opts.onlyOperator] : [...new Set([...Object.keys(assets07.operators || {}), ...Object.keys(pluginOperators)])];
   const required = requiredMisses(manifest, charIds);
   // Leaves the plan had resolved and the manifest loses here (no alternative of theirs on disk): reported on their own
   // line below and kept in the report, whether or not they shrink the committed manifest.

@@ -1554,7 +1554,10 @@ export async function createFieldView(host, options = {}) {
     // [ASSUMED] the latest public choice wins for operator bodies (including stand-ins / DIY), purely in this view.
     let skin = info.sourceSkin === undefined ? info.skin : info.sourceSkin;
     if (info.kind === 'op' && playerSkins.has(info.ownerId)) {
-      skin = playerSkins.get(info.ownerId)[info.diy?.charId || info.spine] || null;
+      // A content operator can borrow an official body, while its seat choice remains namespaced.
+      // Stand-ins still resolve through their effective body, rather than the replaced chess's charId.
+      const charId = info.diy?.charId || (!info.standInFor && data.chess(info.defId)?.charId) || info.spine;
+      skin = playerSkins.get(info.ownerId)[charId] || null;
     }
     if (!skin) return null;
     if (info.ownerId == null || !myId || info.ownerId === myId) return skin;

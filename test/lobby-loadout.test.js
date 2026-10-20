@@ -4,6 +4,9 @@
 // the heavy-intent rate limit; its per-operator 潜能 / 练度 `ops` (0.2.2): validated with it, stored and handed over beside it.
 import { describe, test, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import { startServer } from '../server/index.js';
 import { StubMatch } from '../server/match/StubMatch.js';
@@ -16,6 +19,9 @@ const C = (id) => DATA.chess[id];
 const INSIDE = 'chess_char_1_01_a'; // 隐现: S1 / S2 (default S2), module MAR-X
 const SWIRE = 'chess_char_3_04_a'; // 琳琅诗怀雅: three modules
 const SWIRE_ALT = C(C(SWIRE).goldenId).modules.find((m) => !m.isDefault).uniEquipId;
+// These official loadout tests do not scan the server owner's installed plugin assets.
+const pluginsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-lobby-loadout-'));
+after(() => fs.rmSync(pluginsDir, { recursive: true, force: true }));
 
 /** Stub match that records its constructor options (the seats) — it has no setLoadout. */
 class RecordingStub extends StubMatch {
@@ -56,7 +62,7 @@ describe('room.loadout (lobby, stub match)', () => {
   let pool;
   const cap = quietLog();
   before(async () => {
-    srv = await startServer({ port: 0, host: '127.0.0.1', log: cap.log, MatchClass: RecordingStub, heavyBurst: 6, heavyPerSec: 2 });
+    srv = await startServer({ port: 0, host: '127.0.0.1', pluginsDir, log: cap.log, MatchClass: RecordingStub, heavyBurst: 6, heavyPerSec: 2 });
     pool = clientPool(() => `ws://127.0.0.1:${srv.port}/ws`);
   });
   afterEach(async () => { RecordingStub.instances = []; await pool.closeAll(); });
@@ -158,7 +164,7 @@ describe('room.loadout (lobby + real match)', () => {
   let pool;
   const cap = quietLog();
   before(async () => {
-    srv = await startServer({ port: 0, host: '127.0.0.1', log: cap.log, seedFn: () => 4242 });
+    srv = await startServer({ port: 0, host: '127.0.0.1', pluginsDir, log: cap.log, seedFn: () => 4242 });
     pool = clientPool(() => `ws://127.0.0.1:${srv.port}/ws`);
   });
   afterEach(async () => { await pool.closeAll(); });

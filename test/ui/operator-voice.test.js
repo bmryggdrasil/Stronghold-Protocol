@@ -47,3 +47,8 @@ test('an unknown own-language type falls back to 本土语言; a known one uses 
     assert.equal(operatorVoiceOptions(tree, id, '').find((r) => r.value === 'native').label, name, type);
   }
 });
+test('a LINKAGE operator advertises its real Japanese dub without a Chinese option', () => {
+  const id = 'char_4217_makoto';
+  const options = operatorVoiceOptions({ voiceJp: { [id]: { select: '/jp.mp3' } } }, id, '');
+  assert.deepEqual(options.map(option => option.value), ['', 'jp']);
+});

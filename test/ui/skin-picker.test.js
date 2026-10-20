@@ -78,6 +78,18 @@ function withManifest(assets, fn) {
 before(() => { data.setContent({ id: FIXTURE_ID, values: { assets: MANIFEST } }); });
 after(() => { data.setContent(null); setSkins({}); });
 
+test('a namespaced DIY operator borrows its official body\'s outfits while keeping a distinct seat choice', () => {
+  const custom = 'char_x_operator_inside';
+  data.setContent({ id: FIXTURE_ID, values: { assets: MANIFEST,
+    backups: { units: { [custom]: { charId: custom, assets: { spine: OPERATOR } } } } } });
+  try {
+    assert.deepEqual(availableSkins(custom).map(row => row.id), availableSkins(OPERATOR).map(row => row.id));
+    setSkin(custom, SKIN);
+    assert.equal(chosenSkin(custom), SKIN);
+    assert.equal(chosenSkin(OPERATOR), null, 'borrowing art does not overwrite another operator\'s choice');
+  } finally { data.setContent({ id: FIXTURE_ID, values: { assets: MANIFEST } }); setSkins({}); }
+});
+
 describe('皮肤 picker: what one operator offers', () => {
   test('one row per skin of the composed manifest, plus the operator\'s own 默认 row first', () => {
     const rows = availableSkins(OPERATOR);

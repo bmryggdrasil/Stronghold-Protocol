@@ -717,6 +717,12 @@ SP_E2E=1 node --test test/ui/plugins-settings.e2e.test.js
 [ASSUMED] 来源只作记录，不继承数值或技能；隐藏也排除 `as: "both"` 的自选身份；借用语音共享语音库的浏览器偏好。
 Forge 的 baseId 是普通棋子 id，不当官方来源猜测。详见 [PLUGINS §16](PLUGINS.md#16-forge-import)。
 
+需要区分培养状态时，可在 `forms` 中增加 `"2/60/7/1"` 这样的精确键（精英阶段 / 等级 / 技能等级 / 模组等级），
+命中时优先于 `normal` / `elite`。每份形态可携带 [DATA §2.2](DATA.md#22-loadout-choices-skills--modules-design-16)
+已有格式的 `modules` 和 §2.3 的 `potDown`；模组属性必须是数值、等级必须与形态匹配。潜能天赋链和模组天赋链会保留，
+仍通过现有自选和调配流程装备，不会自动推算缺少的数据。维护内置两位联动干员时，运行
+`node tools/refresh-custom-operator-records.mjs` 从本地官方表重建插件源记录，保留自定义技能 id 和核心战斗 kit；此工具不联网，也不改 `data/`。
+
 ### Forge 导入后继续适配（0.3.1）
 
 - 安全几何函数可以直接导入：`@sim/dir.js` 的 `dirVec`、`offsetTile`，`@sim/targeting.js` 的 `absoluteRangeKeys`。

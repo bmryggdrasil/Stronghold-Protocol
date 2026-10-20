@@ -31,7 +31,8 @@ function hasTree(audio, charId, lang) {
  * wins, otherwise the global language is 'jp' or 'cn'. 'en' / 'kr' / 'native' are not applied on that path.
  * With `audio` (including an empty object): the operator's own choice when this server has that tree, else the
  * own-language dub when `opts.native` is on and the operator has one, else the global language when that tree is
- * present (中文 always), else 'cn'.
+ * present, else Chinese when available. An operator without a Chinese dub (official LINKAGE operators, for example)
+ * uses its installed JP dub, then another installed dub, so 跟随全局 can still speak.
  * @param {string} charId
  * @param {string} globalLang
  * @param {Record<string, string>|null|undefined} overrides
@@ -45,6 +46,8 @@ export function voiceLangFor(charId, globalLang, overrides, opts) {
   if (VOICE_PICKS.includes(own) && hasTree(audio, charId, own)) return own;
   if (opts.native === true && hasTree(audio, charId, 'native')) return 'native';
   const global = VOICE_LANGS.includes(globalLang) ? globalLang : 'cn';
-  if (global === 'cn' || hasTree(audio, charId, global)) return global;
+  if (hasTree(audio, charId, global)) return global;
+  if (hasTree(audio, charId, 'cn')) return 'cn';
+  for (const lang of ['jp', 'en', 'kr', 'native']) if (hasTree(audio, charId, lang)) return lang;
   return 'cn';
 }

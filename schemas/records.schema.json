@@ -110,6 +110,171 @@
                     "skills": {
                       "type": "array"
                     },
+                    "modules": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "uniEquipId",
+                          "level",
+                          "attr",
+                          "talentChanges"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "uniEquipId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "typeName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "typeIcon": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "icon": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "level": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 3
+                          },
+                          "attr": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "maxHp": {
+                                "type": "number"
+                              },
+                              "atk": {
+                                "type": "number"
+                              },
+                              "def": {
+                                "type": "number"
+                              },
+                              "res": {
+                                "type": "number"
+                              },
+                              "aspd": {
+                                "type": "number"
+                              },
+                              "cost": {
+                                "type": "number"
+                              },
+                              "respawnTime": {
+                                "type": "number"
+                              },
+                              "blockCnt": {
+                                "type": "number"
+                              },
+                              "bat": {
+                                "type": "number"
+                              },
+                              "deployLimit": {
+                                "type": "number"
+                              },
+                              "deckStack": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "traitOverride": {
+                            "anyOf": [
+                              {
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "talentChanges": {
+                            "type": "array",
+                            "items": {
+                              "type": "object"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "immunities": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^[A-Za-z][A-Za-z0-9]*$": {
+                          "type": "boolean"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "rangeId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "projectile": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "canHitFly": {
+                      "type": "boolean"
+                    },
+                    "targetPriority": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "potDown": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^[0-4]$": {
+                          "type": "object",
+                          "patternProperties": {
+                            "^stats\\.[A-Za-z][A-Za-z0-9]*$": {
+                              "type": "number"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    },
                     "trait": {
                       "anyOf": [
                         {
@@ -225,6 +390,171 @@
                     "skills": {
                       "type": "array"
                     },
+                    "modules": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "uniEquipId",
+                          "level",
+                          "attr",
+                          "talentChanges"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "uniEquipId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "typeName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "typeIcon": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "icon": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "level": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 3
+                          },
+                          "attr": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "maxHp": {
+                                "type": "number"
+                              },
+                              "atk": {
+                                "type": "number"
+                              },
+                              "def": {
+                                "type": "number"
+                              },
+                              "res": {
+                                "type": "number"
+                              },
+                              "aspd": {
+                                "type": "number"
+                              },
+                              "cost": {
+                                "type": "number"
+                              },
+                              "respawnTime": {
+                                "type": "number"
+                              },
+                              "blockCnt": {
+                                "type": "number"
+                              },
+                              "bat": {
+                                "type": "number"
+                              },
+                              "deployLimit": {
+                                "type": "number"
+                              },
+                              "deckStack": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "traitOverride": {
+                            "anyOf": [
+                              {
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "talentChanges": {
+                            "type": "array",
+                            "items": {
+                              "type": "object"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "immunities": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^[A-Za-z][A-Za-z0-9]*$": {
+                          "type": "boolean"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "rangeId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "projectile": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "canHitFly": {
+                      "type": "boolean"
+                    },
+                    "targetPriority": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "potDown": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^[0-4]$": {
+                          "type": "object",
+                          "patternProperties": {
+                            "^stats\\.[A-Za-z][A-Za-z0-9]*$": {
+                              "type": "number"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    },
                     "trait": {
                       "anyOf": [
                         {
@@ -309,6 +639,203 @@
                           ]
                         }
                       ]
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "patternProperties": {
+                "^[0-2]/[1-9][0-9]*/[1-9][0-9]*/[0-3]$": {
+                  "type": "object",
+                  "required": [
+                    "stats",
+                    "rangeGrid"
+                  ],
+                  "properties": {
+                    "stats": {
+                      "type": "object"
+                    },
+                    "rangeGrid": {
+                      "type": "array",
+                      "maxItems": 1024,
+                      "items": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "items": {
+                          "type": "integer",
+                          "minimum": -64,
+                          "maximum": 64
+                        }
+                      }
+                    },
+                    "skills": {
+                      "type": "array"
+                    },
+                    "modules": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "uniEquipId",
+                          "level",
+                          "attr",
+                          "talentChanges"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "uniEquipId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "typeName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "typeIcon": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "icon": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "level": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 3
+                          },
+                          "attr": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "maxHp": {
+                                "type": "number"
+                              },
+                              "atk": {
+                                "type": "number"
+                              },
+                              "def": {
+                                "type": "number"
+                              },
+                              "res": {
+                                "type": "number"
+                              },
+                              "aspd": {
+                                "type": "number"
+                              },
+                              "cost": {
+                                "type": "number"
+                              },
+                              "respawnTime": {
+                                "type": "number"
+                              },
+                              "blockCnt": {
+                                "type": "number"
+                              },
+                              "bat": {
+                                "type": "number"
+                              },
+                              "deployLimit": {
+                                "type": "number"
+                              },
+                              "deckStack": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "traitOverride": {
+                            "anyOf": [
+                              {
+                                "type": "object"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "talentChanges": {
+                            "type": "array",
+                            "items": {
+                              "type": "object"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "immunities": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^[A-Za-z][A-Za-z0-9]*$": {
+                          "type": "boolean"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "rangeId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "projectile": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "canHitFly": {
+                      "type": "boolean"
+                    },
+                    "targetPriority": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "potDown": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^[0-4]$": {
+                          "type": "object",
+                          "patternProperties": {
+                            "^stats\\.[A-Za-z][A-Za-z0-9]*$": {
+                              "type": "number"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
                     }
                   },
                   "additionalProperties": true
@@ -2894,6 +3421,171 @@
                       "skills": {
                         "type": "array"
                       },
+                      "modules": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "uniEquipId",
+                            "level",
+                            "attr",
+                            "talentChanges"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "uniEquipId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "typeName": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "typeIcon": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "icon": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "level": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 3
+                            },
+                            "attr": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "maxHp": {
+                                  "type": "number"
+                                },
+                                "atk": {
+                                  "type": "number"
+                                },
+                                "def": {
+                                  "type": "number"
+                                },
+                                "res": {
+                                  "type": "number"
+                                },
+                                "aspd": {
+                                  "type": "number"
+                                },
+                                "cost": {
+                                  "type": "number"
+                                },
+                                "respawnTime": {
+                                  "type": "number"
+                                },
+                                "blockCnt": {
+                                  "type": "number"
+                                },
+                                "bat": {
+                                  "type": "number"
+                                },
+                                "deployLimit": {
+                                  "type": "number"
+                                },
+                                "deckStack": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "traitOverride": {
+                              "anyOf": [
+                                {
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "talentChanges": {
+                              "type": "array",
+                              "items": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "immunities": {
+                        "type": "object",
+                        "patternProperties": {
+                          "^[A-Za-z][A-Za-z0-9]*$": {
+                            "type": "boolean"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "rangeId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "projectile": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "canHitFly": {
+                        "type": "boolean"
+                      },
+                      "targetPriority": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "potDown": {
+                        "type": "object",
+                        "patternProperties": {
+                          "^[0-4]$": {
+                            "type": "object",
+                            "patternProperties": {
+                              "^stats\\.[A-Za-z][A-Za-z0-9]*$": {
+                                "type": "number"
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false
+                      },
                       "trait": {
                         "anyOf": [
                           {
@@ -3009,6 +3701,171 @@
                       "skills": {
                         "type": "array"
                       },
+                      "modules": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "uniEquipId",
+                            "level",
+                            "attr",
+                            "talentChanges"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "uniEquipId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "typeName": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "typeIcon": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "icon": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "level": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 3
+                            },
+                            "attr": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "maxHp": {
+                                  "type": "number"
+                                },
+                                "atk": {
+                                  "type": "number"
+                                },
+                                "def": {
+                                  "type": "number"
+                                },
+                                "res": {
+                                  "type": "number"
+                                },
+                                "aspd": {
+                                  "type": "number"
+                                },
+                                "cost": {
+                                  "type": "number"
+                                },
+                                "respawnTime": {
+                                  "type": "number"
+                                },
+                                "blockCnt": {
+                                  "type": "number"
+                                },
+                                "bat": {
+                                  "type": "number"
+                                },
+                                "deployLimit": {
+                                  "type": "number"
+                                },
+                                "deckStack": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "traitOverride": {
+                              "anyOf": [
+                                {
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "talentChanges": {
+                              "type": "array",
+                              "items": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "immunities": {
+                        "type": "object",
+                        "patternProperties": {
+                          "^[A-Za-z][A-Za-z0-9]*$": {
+                            "type": "boolean"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "rangeId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "projectile": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "canHitFly": {
+                        "type": "boolean"
+                      },
+                      "targetPriority": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "potDown": {
+                        "type": "object",
+                        "patternProperties": {
+                          "^[0-4]$": {
+                            "type": "object",
+                            "patternProperties": {
+                              "^stats\\.[A-Za-z][A-Za-z0-9]*$": {
+                                "type": "number"
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false
+                      },
                       "trait": {
                         "anyOf": [
                           {
@@ -3093,6 +3950,203 @@
                             ]
                           }
                         ]
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                },
+                "patternProperties": {
+                  "^[0-2]/[1-9][0-9]*/[1-9][0-9]*/[0-3]$": {
+                    "type": "object",
+                    "required": [
+                      "stats",
+                      "rangeGrid"
+                    ],
+                    "properties": {
+                      "stats": {
+                        "type": "object"
+                      },
+                      "rangeGrid": {
+                        "type": "array",
+                        "maxItems": 1024,
+                        "items": {
+                          "type": "array",
+                          "minItems": 2,
+                          "maxItems": 2,
+                          "items": {
+                            "type": "integer",
+                            "minimum": -64,
+                            "maximum": 64
+                          }
+                        }
+                      },
+                      "skills": {
+                        "type": "array"
+                      },
+                      "modules": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "uniEquipId",
+                            "level",
+                            "attr",
+                            "talentChanges"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "uniEquipId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "name": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "typeName": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "typeIcon": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "icon": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "level": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 3
+                            },
+                            "attr": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "maxHp": {
+                                  "type": "number"
+                                },
+                                "atk": {
+                                  "type": "number"
+                                },
+                                "def": {
+                                  "type": "number"
+                                },
+                                "res": {
+                                  "type": "number"
+                                },
+                                "aspd": {
+                                  "type": "number"
+                                },
+                                "cost": {
+                                  "type": "number"
+                                },
+                                "respawnTime": {
+                                  "type": "number"
+                                },
+                                "blockCnt": {
+                                  "type": "number"
+                                },
+                                "bat": {
+                                  "type": "number"
+                                },
+                                "deployLimit": {
+                                  "type": "number"
+                                },
+                                "deckStack": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "traitOverride": {
+                              "anyOf": [
+                                {
+                                  "type": "object"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "talentChanges": {
+                              "type": "array",
+                              "items": {
+                                "type": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "immunities": {
+                        "type": "object",
+                        "patternProperties": {
+                          "^[A-Za-z][A-Za-z0-9]*$": {
+                            "type": "boolean"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "rangeId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "projectile": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "canHitFly": {
+                        "type": "boolean"
+                      },
+                      "targetPriority": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "potDown": {
+                        "type": "object",
+                        "patternProperties": {
+                          "^[0-4]$": {
+                            "type": "object",
+                            "patternProperties": {
+                              "^stats\\.[A-Za-z][A-Za-z0-9]*$": {
+                                "type": "number"
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false
                       }
                     },
                     "additionalProperties": true
@@ -5692,6 +6746,171 @@
                           "skills": {
                             "type": "array"
                           },
+                          "modules": {
+                            "type": "array",
+                            "maxItems": 10,
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "uniEquipId",
+                                "level",
+                                "attr",
+                                "talentChanges"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "uniEquipId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "name": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "typeName": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "typeIcon": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "icon": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "level": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 3
+                                },
+                                "attr": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "maxHp": {
+                                      "type": "number"
+                                    },
+                                    "atk": {
+                                      "type": "number"
+                                    },
+                                    "def": {
+                                      "type": "number"
+                                    },
+                                    "res": {
+                                      "type": "number"
+                                    },
+                                    "aspd": {
+                                      "type": "number"
+                                    },
+                                    "cost": {
+                                      "type": "number"
+                                    },
+                                    "respawnTime": {
+                                      "type": "number"
+                                    },
+                                    "blockCnt": {
+                                      "type": "number"
+                                    },
+                                    "bat": {
+                                      "type": "number"
+                                    },
+                                    "deployLimit": {
+                                      "type": "number"
+                                    },
+                                    "deckStack": {
+                                      "type": "number"
+                                    }
+                                  }
+                                },
+                                "traitOverride": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "talentChanges": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "immunities": {
+                            "type": "object",
+                            "patternProperties": {
+                              "^[A-Za-z][A-Za-z0-9]*$": {
+                                "type": "boolean"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "rangeId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "projectile": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "canHitFly": {
+                            "type": "boolean"
+                          },
+                          "targetPriority": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "potDown": {
+                            "type": "object",
+                            "patternProperties": {
+                              "^[0-4]$": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^stats\\.[A-Za-z][A-Za-z0-9]*$": {
+                                    "type": "number"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "additionalProperties": false
+                          },
                           "trait": {
                             "anyOf": [
                               {
@@ -5807,6 +7026,171 @@
                           "skills": {
                             "type": "array"
                           },
+                          "modules": {
+                            "type": "array",
+                            "maxItems": 10,
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "uniEquipId",
+                                "level",
+                                "attr",
+                                "talentChanges"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "uniEquipId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "name": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "typeName": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "typeIcon": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "icon": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "level": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 3
+                                },
+                                "attr": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "maxHp": {
+                                      "type": "number"
+                                    },
+                                    "atk": {
+                                      "type": "number"
+                                    },
+                                    "def": {
+                                      "type": "number"
+                                    },
+                                    "res": {
+                                      "type": "number"
+                                    },
+                                    "aspd": {
+                                      "type": "number"
+                                    },
+                                    "cost": {
+                                      "type": "number"
+                                    },
+                                    "respawnTime": {
+                                      "type": "number"
+                                    },
+                                    "blockCnt": {
+                                      "type": "number"
+                                    },
+                                    "bat": {
+                                      "type": "number"
+                                    },
+                                    "deployLimit": {
+                                      "type": "number"
+                                    },
+                                    "deckStack": {
+                                      "type": "number"
+                                    }
+                                  }
+                                },
+                                "traitOverride": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "talentChanges": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "immunities": {
+                            "type": "object",
+                            "patternProperties": {
+                              "^[A-Za-z][A-Za-z0-9]*$": {
+                                "type": "boolean"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "rangeId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "projectile": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "canHitFly": {
+                            "type": "boolean"
+                          },
+                          "targetPriority": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "potDown": {
+                            "type": "object",
+                            "patternProperties": {
+                              "^[0-4]$": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^stats\\.[A-Za-z][A-Za-z0-9]*$": {
+                                    "type": "number"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "additionalProperties": false
+                          },
                           "trait": {
                             "anyOf": [
                               {
@@ -5891,6 +7275,203 @@
                                 ]
                               }
                             ]
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "patternProperties": {
+                      "^[0-2]/[1-9][0-9]*/[1-9][0-9]*/[0-3]$": {
+                        "type": "object",
+                        "required": [
+                          "stats",
+                          "rangeGrid"
+                        ],
+                        "properties": {
+                          "stats": {
+                            "type": "object"
+                          },
+                          "rangeGrid": {
+                            "type": "array",
+                            "maxItems": 1024,
+                            "items": {
+                              "type": "array",
+                              "minItems": 2,
+                              "maxItems": 2,
+                              "items": {
+                                "type": "integer",
+                                "minimum": -64,
+                                "maximum": 64
+                              }
+                            }
+                          },
+                          "skills": {
+                            "type": "array"
+                          },
+                          "modules": {
+                            "type": "array",
+                            "maxItems": 10,
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "uniEquipId",
+                                "level",
+                                "attr",
+                                "talentChanges"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "uniEquipId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "name": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "typeName": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "typeIcon": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "icon": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "level": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 3
+                                },
+                                "attr": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "maxHp": {
+                                      "type": "number"
+                                    },
+                                    "atk": {
+                                      "type": "number"
+                                    },
+                                    "def": {
+                                      "type": "number"
+                                    },
+                                    "res": {
+                                      "type": "number"
+                                    },
+                                    "aspd": {
+                                      "type": "number"
+                                    },
+                                    "cost": {
+                                      "type": "number"
+                                    },
+                                    "respawnTime": {
+                                      "type": "number"
+                                    },
+                                    "blockCnt": {
+                                      "type": "number"
+                                    },
+                                    "bat": {
+                                      "type": "number"
+                                    },
+                                    "deployLimit": {
+                                      "type": "number"
+                                    },
+                                    "deckStack": {
+                                      "type": "number"
+                                    }
+                                  }
+                                },
+                                "traitOverride": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "talentChanges": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "immunities": {
+                            "type": "object",
+                            "patternProperties": {
+                              "^[A-Za-z][A-Za-z0-9]*$": {
+                                "type": "boolean"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "rangeId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "projectile": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "canHitFly": {
+                            "type": "boolean"
+                          },
+                          "targetPriority": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "potDown": {
+                            "type": "object",
+                            "patternProperties": {
+                              "^[0-4]$": {
+                                "type": "object",
+                                "patternProperties": {
+                                  "^stats\\.[A-Za-z][A-Za-z0-9]*$": {
+                                    "type": "number"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "additionalProperties": false
                           }
                         },
                         "additionalProperties": true

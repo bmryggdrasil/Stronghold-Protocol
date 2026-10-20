@@ -32,6 +32,12 @@
   },
   "forms": {
     "normal": {
+      "status": {
+        "phase": 2,
+        "level": 1,
+        "skillLevel": 4,
+        "equipLevel": 0
+      },
       "stats": {
         "maxHp": 1624,
         "atk": 613,
@@ -50,6 +56,14 @@
         "deployLimit": 1,
         "deckStack": 0
       },
+      "immunities": {
+        "stun": false,
+        "silence": false,
+        "sleep": false,
+        "frozen": false,
+        "levitate": false
+      },
+      "rangeId": "3-12",
       "rangeGrid": [
         [
           1,
@@ -86,10 +100,390 @@
       ],
       "dmgType": "phys",
       "attackKind": "ranged",
-      "projectile": "sonicNote",
-      "canHitFly": true
+      "projectile": "arrow",
+      "canHitFly": true,
+      "targetPriority": null,
+      "trait": {
+        "desc": "可以进行远程攻击，但此时攻击力降低至80%",
+        "descRaw": "可以进行<@ba.kw>远程攻击</>，但此时攻击力降低至80%",
+        "bb": {
+          "atk_scale": 0.8
+        },
+        "bbStr": {},
+        "rangeGrid": null
+      },
+      "skills": [
+        {
+          "skillId": "skx_op_oblvns_1",
+          "iconId": "skchr_oblvns_1",
+          "name": "新月的苏醒",
+          "level": 4,
+          "desc": "演奏出8个音符。每个音符造成的法术伤害依次从攻击力的65%逐渐降低至4%。\n可充能2次，充能至最大层数时自动释放一次",
+          "descRaw": "演奏出<@ba.vup>8</>个音符。每个音符造成的法术伤害依次从攻击力的<@ba.vup>65%</>逐渐降低至<@ba.vup>4%</>。\n<@ba.rem>可充能2次，充能至最大层数时自动释放一次</>",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "duration": -1,
+          "spType": "INCREASE_WHEN_ATTACK",
+          "spCost": 4,
+          "initSp": 0,
+          "maxChargeTime": 2,
+          "increment": 1,
+          "bb": {
+            "atk_scale": 0.65,
+            "atk_scale_2": 0.6,
+            "atk_scale_3": 0.49,
+            "atk_scale_4": 0.38,
+            "atk_scale_5": 0.27,
+            "atk_scale_6": 0.22,
+            "atk_scale_7": 0.11,
+            "atk_scale_8": 0.04,
+            "angle": 15
+          },
+          "bbStr": {},
+          "rangeId": null,
+          "rangeGrid": null,
+          "prefabId": "skchr_oblvns_1",
+          "trigger": {
+            "rule": "DEFAULT",
+            "rawRule": "DEFAULT",
+            "customRangeGrid": null
+          },
+          "index": 0,
+          "overrideTokenKey": null,
+          "default": true
+        },
+        {
+          "skillId": "skx_op_oblvns_2",
+          "iconId": "skchr_oblvns_2",
+          "name": "满月的舞会",
+          "level": 4,
+          "desc": "可以切换钢琴（初始）或风琴音色演奏：\n钢琴：攻击力+60%，音符飞行速度加快，命中目标后穿过敌人造成物理伤害\n风琴：攻击速度+80，音符造成法术伤害且飞行速度减缓 \nFever期间变为当前音色的二连击",
+          "descRaw": "<@ba.rem>可以切换<@ba.vup>钢琴（初始）</>或<@ba.vup>风琴</>音色演奏：</>\n<@ba.vup>钢琴</>：攻击力<@ba.vup>+60%</>，音符飞行速度加快，命中目标后穿过敌人造成<@ba.vup>物理伤害</>\n<@ba.vup>风琴</>：攻击速度<@ba.vup>+80</>，音符造成<@ba.vup>法术伤害</>且飞行速度减缓 \n<@ba.rem><$ba.fever>Fever</>期间变为当前音色的二连击</>",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "duration": -1,
+          "spType": "INCREASE_WHEN_ATTACK",
+          "spCost": 5,
+          "initSp": 0,
+          "maxChargeTime": 1,
+          "increment": 1,
+          "bb": {
+            "attack@attack_speed": 80,
+            "attack@atk": 0.6,
+            "attack@passby_delay": 0.5
+          },
+          "bbStr": {},
+          "rangeId": null,
+          "rangeGrid": null,
+          "prefabId": "skchr_oblvns_2",
+          "trigger": {
+            "rule": "DEFAULT",
+            "rawRule": "DEFAULT",
+            "customRangeGrid": null
+          },
+          "index": 1,
+          "overrideTokenKey": null,
+          "default": false
+        },
+        {
+          "skillId": "skx_op_oblvns_3",
+          "iconId": "skchr_oblvns_3",
+          "name": "残月的余响",
+          "level": 4,
+          "desc": "攻击范围扩大，攻击同时使用钢琴和风琴音色演奏，各自演奏2个造成相当于攻击力155%物理和法术伤害的音符，且分别追踪法术抗性和防御力最高的敌人。\nFever期间Ave Mujica成员受到致命伤害时不撤退，Fever结束后退场",
+          "descRaw": "攻击范围扩大，攻击同时使用<@ba.vup>钢琴</>和<@ba.vup>风琴</>音色演奏，各自演奏<@ba.vup>2</>个造成相当于攻击力<@ba.vup>155%</>物理和法术伤害的音符，且分别追踪法术抗性和防御力最高的敌人。\n<@ba.rem><$ba.fever>Fever</>期间<$ba.mujica>Ave Mujica</>成员受到致命伤害时不撤退，<$ba.fever>Fever</>结束后退场</>",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "duration": 25,
+          "spType": "INCREASE_WHEN_ATTACK",
+          "spCost": 47,
+          "initSp": 28,
+          "maxChargeTime": 1,
+          "increment": 1,
+          "bb": {
+            "attack@attack_speed": 0,
+            "attack@atk_scale": 1.55
+          },
+          "bbStr": {},
+          "rangeId": "3-21",
+          "rangeGrid": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -1,
+              1
+            ],
+            [
+              -1,
+              2
+            ],
+            [
+              -1,
+              3
+            ],
+            [
+              -2,
+              0
+            ],
+            [
+              -2,
+              1
+            ]
+          ],
+          "prefabId": "skchr_oblvns_3",
+          "trigger": {
+            "rule": "ACTIVE_RANGE",
+            "rawRule": "DEFAULT",
+            "customRangeGrid": [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                2
+              ],
+              [
+                0,
+                3
+              ],
+              [
+                -1,
+                0
+              ],
+              [
+                -1,
+                1
+              ],
+              [
+                -1,
+                2
+              ],
+              [
+                -1,
+                3
+              ],
+              [
+                -2,
+                0
+              ],
+              [
+                -2,
+                1
+              ]
+            ]
+          },
+          "index": 2,
+          "overrideTokenKey": null,
+          "default": false
+        }
+      ],
+      "talents": [
+        {
+          "index": 0,
+          "name": "颂乐音符",
+          "desc": "丰川祥子可以持续攻击且攻击会演奏追踪敌人的音符，音符飘出攻击范围一段时间后消失。每存在一个音符，Ave Mujica成员无视敌人3%的防御力和2%法术抗性（最多叠加至10层）",
+          "descRaw": "丰川祥子可以<$ba.permanentatk>持续攻击</>且攻击会演奏追踪敌人的音符，音符飘出攻击范围一段时间后消失。每存在一个音符，<$ba.mujica>Ave Mujica</>成员无视敌人3%的防御力和2%法术抗性（最多叠加至10层）",
+          "bb": {
+            "delay": 1,
+            "def_penetrate_ratio": 0.03,
+            "magic_resist_penetrate_ratio": 0.02,
+            "attack@angle": 20,
+            "max_cnt": 10
+          },
+          "bbStr": {},
+          "rangeGrid": [
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -1,
+              1
+            ]
+          ],
+          "tokenKey": null,
+          "hidden": false,
+          "fromModule": false
+        },
+        {
+          "index": 1,
+          "name": "毋畏遗忘",
+          "desc": "对敌人造成伤害时使Fever+3；其他Ave Mujica成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+16（+4）",
+          "descRaw": "对敌人造成伤害时使<$ba.fever>Fever</>+3；其他<$ba.mujica>Ave Mujica</>成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+16<@ba.talpu>（+4）</>",
+          "bb": {
+            "enable": 1,
+            "attack_speed": 16,
+            "cnt": 3
+          },
+          "bbStr": {},
+          "rangeGrid": [
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -1,
+              1
+            ]
+          ],
+          "tokenKey": null,
+          "hidden": false,
+          "fromModule": false,
+          "potMin": 4,
+          "potBelow": {
+            "desc": "对敌人造成伤害时使Fever+3；其他Ave Mujica成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+12",
+            "descRaw": "对敌人造成伤害时使<$ba.fever>Fever</>+3；其他<$ba.mujica>Ave Mujica</>成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+12",
+            "bb": {
+              "enable": 1,
+              "attack_speed": 12,
+              "cnt": 3
+            }
+          }
+        }
+      ],
+      "displayTokens": [],
+      "tokens": [],
+      "potDown": {
+        "0": {
+          "stats.cost": 20
+        },
+        "1": {
+          "stats.respawnTime": 70
+        },
+        "2": {
+          "stats.atk": 587
+        },
+        "4": {
+          "stats.cost": 19
+        }
+      }
     },
     "elite": {
+      "status": {
+        "phase": 2,
+        "level": 60,
+        "skillLevel": 7,
+        "equipLevel": 3
+      },
       "stats": {
         "maxHp": 1910,
         "atk": 704,
@@ -108,6 +502,14 @@
         "deployLimit": 1,
         "deckStack": 0
       },
+      "immunities": {
+        "stun": false,
+        "silence": false,
+        "sleep": false,
+        "frozen": false,
+        "levitate": false
+      },
+      "rangeId": "3-12",
       "rangeGrid": [
         [
           1,
@@ -144,8 +546,946 @@
       ],
       "dmgType": "phys",
       "attackKind": "ranged",
-      "projectile": "sonicNote",
-      "canHitFly": true
+      "projectile": "arrow",
+      "canHitFly": true,
+      "targetPriority": null,
+      "trait": {
+        "desc": "可以进行远程攻击，但此时攻击力降低至80%",
+        "descRaw": "可以进行<@ba.kw>远程攻击</>，但此时攻击力降低至80%",
+        "bb": {
+          "atk_scale": 0.8
+        },
+        "bbStr": {},
+        "rangeGrid": null
+      },
+      "skills": [
+        {
+          "skillId": "skx_op_oblvns_1",
+          "iconId": "skchr_oblvns_1",
+          "name": "新月的苏醒",
+          "level": 7,
+          "desc": "演奏出8个音符。每个音符造成的法术伤害依次从攻击力的80%逐渐降低至4%。\n可充能2次，充能至最大层数时自动释放一次",
+          "descRaw": "演奏出<@ba.vup>8</>个音符。每个音符造成的法术伤害依次从攻击力的<@ba.vup>80%</>逐渐降低至<@ba.vup>4%</>。\n<@ba.rem>可充能2次，充能至最大层数时自动释放一次</>",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "duration": -1,
+          "spType": "INCREASE_WHEN_ATTACK",
+          "spCost": 4,
+          "initSp": 0,
+          "maxChargeTime": 2,
+          "increment": 1,
+          "bb": {
+            "atk_scale": 0.8,
+            "atk_scale_2": 0.73,
+            "atk_scale_3": 0.6,
+            "atk_scale_4": 0.47,
+            "atk_scale_5": 0.33,
+            "atk_scale_6": 0.27,
+            "atk_scale_7": 0.13,
+            "atk_scale_8": 0.04,
+            "angle": 15
+          },
+          "bbStr": {},
+          "rangeId": null,
+          "rangeGrid": null,
+          "prefabId": "skchr_oblvns_1",
+          "trigger": {
+            "rule": "DEFAULT",
+            "rawRule": "DEFAULT",
+            "customRangeGrid": null
+          },
+          "index": 0,
+          "overrideTokenKey": null,
+          "default": true
+        },
+        {
+          "skillId": "skx_op_oblvns_2",
+          "iconId": "skchr_oblvns_2",
+          "name": "满月的舞会",
+          "level": 7,
+          "desc": "可以切换钢琴（初始）或风琴音色演奏：\n钢琴：攻击力+75%，音符飞行速度加快，命中目标后穿过敌人造成物理伤害\n风琴：攻击速度+110，音符造成法术伤害且飞行速度减缓 \nFever期间变为当前音色的二连击",
+          "descRaw": "<@ba.rem>可以切换<@ba.vup>钢琴（初始）</>或<@ba.vup>风琴</>音色演奏：</>\n<@ba.vup>钢琴</>：攻击力<@ba.vup>+75%</>，音符飞行速度加快，命中目标后穿过敌人造成<@ba.vup>物理伤害</>\n<@ba.vup>风琴</>：攻击速度<@ba.vup>+110</>，音符造成<@ba.vup>法术伤害</>且飞行速度减缓 \n<@ba.rem><$ba.fever>Fever</>期间变为当前音色的二连击</>",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "duration": -1,
+          "spType": "INCREASE_WHEN_ATTACK",
+          "spCost": 5,
+          "initSp": 0,
+          "maxChargeTime": 1,
+          "increment": 1,
+          "bb": {
+            "attack@attack_speed": 110,
+            "attack@atk": 0.75,
+            "attack@passby_delay": 0.5
+          },
+          "bbStr": {},
+          "rangeId": null,
+          "rangeGrid": null,
+          "prefabId": "skchr_oblvns_2",
+          "trigger": {
+            "rule": "DEFAULT",
+            "rawRule": "DEFAULT",
+            "customRangeGrid": null
+          },
+          "index": 1,
+          "overrideTokenKey": null,
+          "default": false
+        },
+        {
+          "skillId": "skx_op_oblvns_3",
+          "iconId": "skchr_oblvns_3",
+          "name": "残月的余响",
+          "level": 7,
+          "desc": "攻击范围扩大，攻击同时使用钢琴和风琴音色演奏，各自演奏2个造成相当于攻击力180%物理和法术伤害的音符，且分别追踪法术抗性和防御力最高的敌人。\nFever期间Ave Mujica成员受到致命伤害时不撤退，Fever结束后退场",
+          "descRaw": "攻击范围扩大，攻击同时使用<@ba.vup>钢琴</>和<@ba.vup>风琴</>音色演奏，各自演奏<@ba.vup>2</>个造成相当于攻击力<@ba.vup>180%</>物理和法术伤害的音符，且分别追踪法术抗性和防御力最高的敌人。\n<@ba.rem><$ba.fever>Fever</>期间<$ba.mujica>Ave Mujica</>成员受到致命伤害时不撤退，<$ba.fever>Fever</>结束后退场</>",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "duration": 25,
+          "spType": "INCREASE_WHEN_ATTACK",
+          "spCost": 46,
+          "initSp": 30,
+          "maxChargeTime": 1,
+          "increment": 1,
+          "bb": {
+            "attack@attack_speed": 0,
+            "attack@atk_scale": 1.8
+          },
+          "bbStr": {},
+          "rangeId": "3-21",
+          "rangeGrid": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -1,
+              1
+            ],
+            [
+              -1,
+              2
+            ],
+            [
+              -1,
+              3
+            ],
+            [
+              -2,
+              0
+            ],
+            [
+              -2,
+              1
+            ]
+          ],
+          "prefabId": "skchr_oblvns_3",
+          "trigger": {
+            "rule": "ACTIVE_RANGE",
+            "rawRule": "DEFAULT",
+            "customRangeGrid": [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                2
+              ],
+              [
+                0,
+                3
+              ],
+              [
+                -1,
+                0
+              ],
+              [
+                -1,
+                1
+              ],
+              [
+                -1,
+                2
+              ],
+              [
+                -1,
+                3
+              ],
+              [
+                -2,
+                0
+              ],
+              [
+                -2,
+                1
+              ]
+            ]
+          },
+          "index": 2,
+          "overrideTokenKey": null,
+          "default": false
+        }
+      ],
+      "talents": [
+        {
+          "index": 0,
+          "name": "颂乐音符",
+          "desc": "丰川祥子可以持续攻击且攻击会演奏追踪敌人的音符，音符飘出攻击范围一段时间后消失。每存在一个音符，Ave Mujica成员无视敌人3%的防御力和2%法术抗性（最多叠加至10层）",
+          "descRaw": "丰川祥子可以<$ba.permanentatk>持续攻击</>且攻击会演奏追踪敌人的音符，音符飘出攻击范围一段时间后消失。每存在一个音符，<$ba.mujica>Ave Mujica</>成员无视敌人3%的防御力和2%法术抗性（最多叠加至10层）",
+          "bb": {
+            "delay": 1,
+            "def_penetrate_ratio": 0.03,
+            "magic_resist_penetrate_ratio": 0.02,
+            "attack@angle": 20,
+            "max_cnt": 10
+          },
+          "bbStr": {},
+          "rangeGrid": [
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -1,
+              1
+            ]
+          ],
+          "tokenKey": null,
+          "hidden": false,
+          "fromModule": false
+        },
+        {
+          "index": 1,
+          "name": "毋畏遗忘",
+          "desc": "对敌人造成伤害时使Fever+3；其他Ave Mujica成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+16（+4）",
+          "descRaw": "对敌人造成伤害时使<$ba.fever>Fever</>+3；其他<$ba.mujica>Ave Mujica</>成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+16<@ba.talpu>（+4）</>",
+          "bb": {
+            "enable": 1,
+            "attack_speed": 16,
+            "cnt": 3
+          },
+          "bbStr": {},
+          "rangeGrid": [
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -1,
+              1
+            ]
+          ],
+          "tokenKey": null,
+          "hidden": false,
+          "fromModule": false,
+          "potMin": 4,
+          "potBelow": {
+            "desc": "对敌人造成伤害时使Fever+3；其他Ave Mujica成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+12",
+            "descRaw": "对敌人造成伤害时使<$ba.fever>Fever</>+3；其他<$ba.mujica>Ave Mujica</>成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+12",
+            "bb": {
+              "enable": 1,
+              "attack_speed": 12,
+              "cnt": 3
+            }
+          }
+        }
+      ],
+      "displayTokens": [],
+      "tokens": [],
+      "modules": [
+        {
+          "uniEquipId": "uniequip_002_oblvns",
+          "name": "无言的约定",
+          "typeName": "LOR-Y",
+          "typeIcon": "lor-y",
+          "icon": "uniequip_002_oblvns",
+          "level": 3,
+          "attr": {
+            "maxHp": 300,
+            "atk": 63,
+            "aspd": 7
+          },
+          "traitOverride": {
+            "desc": "可以进行远程攻击，但此时攻击力降低至80%",
+            "descRaw": "可以进行<@ba.kw>远程攻击</>，但此时攻击力降低至80%",
+            "bb": {
+              "atk_scale": 0.8,
+              "attack_speed": 12
+            },
+            "bbStr": {},
+            "rangeGrid": null,
+            "moduleDesc": "攻击范围内存在2名及以上敌人时攻击速度+12",
+            "moduleDescRaw": "攻击范围内存在2名及以上敌人时攻击速度<@ba.vup>+12</>"
+          },
+          "talentChanges": [
+            {
+              "talentIndex": 0,
+              "name": "颂乐音符",
+              "desc": "丰川祥子可以持续攻击且攻击会演奏追踪敌人的音符，音符飘出攻击范围一段时间后消失。每存在一个音符，Ave Mujica成员无视敌人5%的防御力和2.5%法术抗性（最多可叠加12层）；技能期间远程攻击不再降低攻击力",
+              "descRaw": "丰川祥子可以<$ba.permanentatk>持续攻击</>且攻击会演奏追踪敌人的音符，音符飘出攻击范围一段时间后消失。每存在一个音符，<$ba.mujica>Ave Mujica</>成员无视敌人5%的防御力和2.5%法术抗性（最多可叠加12层）；技能期间远程攻击不再降低攻击力",
+              "bb": {
+                "def_penetrate_ratio": 0.05,
+                "magic_resist_penetrate_ratio": 0.025,
+                "attack@angle": 20,
+                "delay": 1,
+                "max_cnt": 12
+              },
+              "bbStr": {},
+              "rangeGrid": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  2
+                ],
+                [
+                  0,
+                  3
+                ],
+                [
+                  -1,
+                  0
+                ],
+                [
+                  -1,
+                  1
+                ]
+              ],
+              "tokenKey": null,
+              "hidden": false
+            },
+            {
+              "talentIndex": -1,
+              "name": null,
+              "desc": null,
+              "descRaw": null,
+              "bb": {},
+              "bbStr": {},
+              "rangeGrid": null,
+              "tokenKey": null,
+              "hidden": false
+            }
+          ]
+        }
+      ],
+      "potDown": {
+        "0": {
+          "stats.cost": 20
+        },
+        "1": {
+          "stats.respawnTime": 70
+        },
+        "2": {
+          "stats.atk": 678
+        },
+        "4": {
+          "stats.cost": 19
+        }
+      }
+    },
+    "2/60/7/1": {
+      "status": {
+        "phase": 2,
+        "level": 60,
+        "skillLevel": 7,
+        "equipLevel": 1
+      },
+      "stats": {
+        "maxHp": 1910,
+        "atk": 704,
+        "def": 400,
+        "res": 10,
+        "cost": 18,
+        "blockCnt": 2,
+        "bat": 1.3,
+        "aspd": 100,
+        "respawnTime": 66,
+        "spRecovery": 1,
+        "hpRecoveryPerSec": 0,
+        "moveSpeed": 1,
+        "tauntLevel": 0,
+        "massLevel": 0,
+        "deployLimit": 1,
+        "deckStack": 0
+      },
+      "immunities": {
+        "stun": false,
+        "silence": false,
+        "sleep": false,
+        "frozen": false,
+        "levitate": false
+      },
+      "rangeId": "3-12",
+      "rangeGrid": [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ]
+      ],
+      "dmgType": "phys",
+      "attackKind": "ranged",
+      "projectile": "arrow",
+      "canHitFly": true,
+      "targetPriority": null,
+      "trait": {
+        "desc": "可以进行远程攻击，但此时攻击力降低至80%",
+        "descRaw": "可以进行<@ba.kw>远程攻击</>，但此时攻击力降低至80%",
+        "bb": {
+          "atk_scale": 0.8
+        },
+        "bbStr": {},
+        "rangeGrid": null
+      },
+      "skills": [
+        {
+          "skillId": "skx_op_oblvns_1",
+          "iconId": "skchr_oblvns_1",
+          "name": "新月的苏醒",
+          "level": 7,
+          "desc": "演奏出8个音符。每个音符造成的法术伤害依次从攻击力的80%逐渐降低至4%。\n可充能2次，充能至最大层数时自动释放一次",
+          "descRaw": "演奏出<@ba.vup>8</>个音符。每个音符造成的法术伤害依次从攻击力的<@ba.vup>80%</>逐渐降低至<@ba.vup>4%</>。\n<@ba.rem>可充能2次，充能至最大层数时自动释放一次</>",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "duration": -1,
+          "spType": "INCREASE_WHEN_ATTACK",
+          "spCost": 4,
+          "initSp": 0,
+          "maxChargeTime": 2,
+          "increment": 1,
+          "bb": {
+            "atk_scale": 0.8,
+            "atk_scale_2": 0.73,
+            "atk_scale_3": 0.6,
+            "atk_scale_4": 0.47,
+            "atk_scale_5": 0.33,
+            "atk_scale_6": 0.27,
+            "atk_scale_7": 0.13,
+            "atk_scale_8": 0.04,
+            "angle": 15
+          },
+          "bbStr": {},
+          "rangeId": null,
+          "rangeGrid": null,
+          "prefabId": "skchr_oblvns_1",
+          "trigger": {
+            "rule": "DEFAULT",
+            "rawRule": "DEFAULT",
+            "customRangeGrid": null
+          },
+          "index": 0,
+          "overrideTokenKey": null,
+          "default": true
+        },
+        {
+          "skillId": "skx_op_oblvns_2",
+          "iconId": "skchr_oblvns_2",
+          "name": "满月的舞会",
+          "level": 7,
+          "desc": "可以切换钢琴（初始）或风琴音色演奏：\n钢琴：攻击力+75%，音符飞行速度加快，命中目标后穿过敌人造成物理伤害\n风琴：攻击速度+110，音符造成法术伤害且飞行速度减缓 \nFever期间变为当前音色的二连击",
+          "descRaw": "<@ba.rem>可以切换<@ba.vup>钢琴（初始）</>或<@ba.vup>风琴</>音色演奏：</>\n<@ba.vup>钢琴</>：攻击力<@ba.vup>+75%</>，音符飞行速度加快，命中目标后穿过敌人造成<@ba.vup>物理伤害</>\n<@ba.vup>风琴</>：攻击速度<@ba.vup>+110</>，音符造成<@ba.vup>法术伤害</>且飞行速度减缓 \n<@ba.rem><$ba.fever>Fever</>期间变为当前音色的二连击</>",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "duration": -1,
+          "spType": "INCREASE_WHEN_ATTACK",
+          "spCost": 5,
+          "initSp": 0,
+          "maxChargeTime": 1,
+          "increment": 1,
+          "bb": {
+            "attack@attack_speed": 110,
+            "attack@atk": 0.75,
+            "attack@passby_delay": 0.5
+          },
+          "bbStr": {},
+          "rangeId": null,
+          "rangeGrid": null,
+          "prefabId": "skchr_oblvns_2",
+          "trigger": {
+            "rule": "DEFAULT",
+            "rawRule": "DEFAULT",
+            "customRangeGrid": null
+          },
+          "index": 1,
+          "overrideTokenKey": null,
+          "default": false
+        },
+        {
+          "skillId": "skx_op_oblvns_3",
+          "iconId": "skchr_oblvns_3",
+          "name": "残月的余响",
+          "level": 7,
+          "desc": "攻击范围扩大，攻击同时使用钢琴和风琴音色演奏，各自演奏2个造成相当于攻击力180%物理和法术伤害的音符，且分别追踪法术抗性和防御力最高的敌人。\nFever期间Ave Mujica成员受到致命伤害时不撤退，Fever结束后退场",
+          "descRaw": "攻击范围扩大，攻击同时使用<@ba.vup>钢琴</>和<@ba.vup>风琴</>音色演奏，各自演奏<@ba.vup>2</>个造成相当于攻击力<@ba.vup>180%</>物理和法术伤害的音符，且分别追踪法术抗性和防御力最高的敌人。\n<@ba.rem><$ba.fever>Fever</>期间<$ba.mujica>Ave Mujica</>成员受到致命伤害时不撤退，<$ba.fever>Fever</>结束后退场</>",
+          "skillType": "MANUAL",
+          "durationType": "NONE",
+          "duration": 25,
+          "spType": "INCREASE_WHEN_ATTACK",
+          "spCost": 46,
+          "initSp": 30,
+          "maxChargeTime": 1,
+          "increment": 1,
+          "bb": {
+            "attack@attack_speed": 0,
+            "attack@atk_scale": 1.8
+          },
+          "bbStr": {},
+          "rangeId": "3-21",
+          "rangeGrid": [
+            [
+              2,
+              0
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -1,
+              1
+            ],
+            [
+              -1,
+              2
+            ],
+            [
+              -1,
+              3
+            ],
+            [
+              -2,
+              0
+            ],
+            [
+              -2,
+              1
+            ]
+          ],
+          "prefabId": "skchr_oblvns_3",
+          "trigger": {
+            "rule": "ACTIVE_RANGE",
+            "rawRule": "DEFAULT",
+            "customRangeGrid": [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                1
+              ],
+              [
+                1,
+                0
+              ],
+              [
+                1,
+                1
+              ],
+              [
+                1,
+                2
+              ],
+              [
+                1,
+                3
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                2
+              ],
+              [
+                0,
+                3
+              ],
+              [
+                -1,
+                0
+              ],
+              [
+                -1,
+                1
+              ],
+              [
+                -1,
+                2
+              ],
+              [
+                -1,
+                3
+              ],
+              [
+                -2,
+                0
+              ],
+              [
+                -2,
+                1
+              ]
+            ]
+          },
+          "index": 2,
+          "overrideTokenKey": null,
+          "default": false
+        }
+      ],
+      "talents": [
+        {
+          "index": 0,
+          "name": "颂乐音符",
+          "desc": "丰川祥子可以持续攻击且攻击会演奏追踪敌人的音符，音符飘出攻击范围一段时间后消失。每存在一个音符，Ave Mujica成员无视敌人3%的防御力和2%法术抗性（最多叠加至10层）",
+          "descRaw": "丰川祥子可以<$ba.permanentatk>持续攻击</>且攻击会演奏追踪敌人的音符，音符飘出攻击范围一段时间后消失。每存在一个音符，<$ba.mujica>Ave Mujica</>成员无视敌人3%的防御力和2%法术抗性（最多叠加至10层）",
+          "bb": {
+            "delay": 1,
+            "def_penetrate_ratio": 0.03,
+            "magic_resist_penetrate_ratio": 0.02,
+            "attack@angle": 20,
+            "max_cnt": 10
+          },
+          "bbStr": {},
+          "rangeGrid": [
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -1,
+              1
+            ]
+          ],
+          "tokenKey": null,
+          "hidden": false,
+          "fromModule": false
+        },
+        {
+          "index": 1,
+          "name": "毋畏遗忘",
+          "desc": "对敌人造成伤害时使Fever+3；其他Ave Mujica成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+16（+4）",
+          "descRaw": "对敌人造成伤害时使<$ba.fever>Fever</>+3；其他<$ba.mujica>Ave Mujica</>成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+16<@ba.talpu>（+4）</>",
+          "bb": {
+            "enable": 1,
+            "attack_speed": 16,
+            "cnt": 3
+          },
+          "bbStr": {},
+          "rangeGrid": [
+            [
+              1,
+              0
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              3
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -1,
+              1
+            ]
+          ],
+          "tokenKey": null,
+          "hidden": false,
+          "fromModule": false,
+          "potMin": 4,
+          "potBelow": {
+            "desc": "对敌人造成伤害时使Fever+3；其他Ave Mujica成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+12",
+            "descRaw": "对敌人造成伤害时使<$ba.fever>Fever</>+3；其他<$ba.mujica>Ave Mujica</>成员的攻击范围若与自身原本攻击范围重合，则将其视作攻击范围的延伸；攻击范围内干员攻击速度+12",
+            "bb": {
+              "enable": 1,
+              "attack_speed": 12,
+              "cnt": 3
+            }
+          }
+        }
+      ],
+      "displayTokens": [],
+      "tokens": [],
+      "modules": [
+        {
+          "uniEquipId": "uniequip_002_oblvns",
+          "name": "无言的约定",
+          "typeName": "LOR-Y",
+          "typeIcon": "lor-y",
+          "icon": "uniequip_002_oblvns",
+          "level": 1,
+          "attr": {
+            "maxHp": 180,
+            "atk": 38,
+            "aspd": 5
+          },
+          "traitOverride": {
+            "desc": "可以进行远程攻击，但此时攻击力降低至80%",
+            "descRaw": "可以进行<@ba.kw>远程攻击</>，但此时攻击力降低至80%",
+            "bb": {
+              "atk_scale": 0.8,
+              "attack_speed": 12
+            },
+            "bbStr": {},
+            "rangeGrid": null,
+            "moduleDesc": "攻击范围内存在2名及以上敌人时攻击速度+12",
+            "moduleDescRaw": "攻击范围内存在2名及以上敌人时攻击速度<@ba.vup>+12</>"
+          },
+          "talentChanges": []
+        }
+      ],
+      "potDown": {
+        "0": {
+          "stats.cost": 20
+        },
+        "1": {
+          "stats.respawnTime": 70
+        },
+        "2": {
+          "stats.atk": 678
+        },
+        "4": {
+          "stats.cost": 19
+        }
+      }
     }
   },
   "trait": {
@@ -272,7 +1612,9 @@
   "skills": [
     {
       "skillId": "skx_op_oblvns_1",
+      "iconId": "skchr_oblvns_1",
       "name": "新月的苏醒",
+      "level": 4,
       "desc": "演奏出8个音符。每个音符造成的法术伤害依次从攻击力的65%逐渐降低至4%。\n可充能2次，充能至最大层数时自动释放一次",
       "descRaw": "演奏出<@ba.vup>8</>个音符。每个音符造成的法术伤害依次从攻击力的<@ba.vup>65%</>逐渐降低至<@ba.vup>4%</>。\n<@ba.rem>可充能2次，充能至最大层数时自动释放一次</>",
       "skillType": "MANUAL",
@@ -282,7 +1624,7 @@
       "spCost": 4,
       "initSp": 0,
       "maxChargeTime": 2,
-      "default": true,
+      "increment": 1,
       "bb": {
         "atk_scale": 0.65,
         "atk_scale_2": 0.6,
@@ -293,11 +1635,25 @@
         "atk_scale_7": 0.11,
         "atk_scale_8": 0.04,
         "angle": 15
-      }
+      },
+      "bbStr": {},
+      "rangeId": null,
+      "rangeGrid": null,
+      "prefabId": "skchr_oblvns_1",
+      "trigger": {
+        "rule": "DEFAULT",
+        "rawRule": "DEFAULT",
+        "customRangeGrid": null
+      },
+      "index": 0,
+      "overrideTokenKey": null,
+      "default": true
     },
     {
       "skillId": "skx_op_oblvns_2",
+      "iconId": "skchr_oblvns_2",
       "name": "满月的舞会",
+      "level": 4,
       "desc": "可以切换钢琴（初始）或风琴音色演奏：\n钢琴：攻击力+60%，音符飞行速度加快，命中目标后穿过敌人造成物理伤害\n风琴：攻击速度+80，音符造成法术伤害且飞行速度减缓 \nFever期间变为当前音色的二连击",
       "descRaw": "<@ba.rem>可以切换<@ba.vup>钢琴（初始）</>或<@ba.vup>风琴</>音色演奏：</>\n<@ba.vup>钢琴</>：攻击力<@ba.vup>+60%</>，音符飞行速度加快，命中目标后穿过敌人造成<@ba.vup>物理伤害</>\n<@ba.vup>风琴</>：攻击速度<@ba.vup>+80</>，音符造成<@ba.vup>法术伤害</>且飞行速度减缓 \n<@ba.rem><$ba.fever>Fever</>期间变为当前音色的二连击</>",
       "skillType": "MANUAL",
@@ -307,16 +1663,30 @@
       "spCost": 5,
       "initSp": 0,
       "maxChargeTime": 1,
-      "default": false,
+      "increment": 1,
       "bb": {
-        "attack_speed": 80,
+        "attack@attack_speed": 80,
         "attack@atk": 0.6,
         "attack@passby_delay": 0.5
-      }
+      },
+      "bbStr": {},
+      "rangeId": null,
+      "rangeGrid": null,
+      "prefabId": "skchr_oblvns_2",
+      "trigger": {
+        "rule": "DEFAULT",
+        "rawRule": "DEFAULT",
+        "customRangeGrid": null
+      },
+      "index": 1,
+      "overrideTokenKey": null,
+      "default": false
     },
     {
       "skillId": "skx_op_oblvns_3",
+      "iconId": "skchr_oblvns_3",
       "name": "残月的余响",
+      "level": 4,
       "desc": "攻击范围扩大，攻击同时使用钢琴和风琴音色演奏，各自演奏2个造成相当于攻击力155%物理和法术伤害的音符，且分别追踪法术抗性和防御力最高的敌人。\nFever期间Ave Mujica成员受到致命伤害时不撤退，Fever结束后退场",
       "descRaw": "攻击范围扩大，攻击同时使用<@ba.vup>钢琴</>和<@ba.vup>风琴</>音色演奏，各自演奏<@ba.vup>2</>个造成相当于攻击力<@ba.vup>155%</>物理和法术伤害的音符，且分别追踪法术抗性和防御力最高的敌人。\n<@ba.rem><$ba.fever>Fever</>期间<$ba.mujica>Ave Mujica</>成员受到致命伤害时不撤退，<$ba.fever>Fever</>结束后退场</>",
       "skillType": "MANUAL",
@@ -326,11 +1696,153 @@
       "spCost": 47,
       "initSp": 28,
       "maxChargeTime": 1,
-      "default": false,
+      "increment": 1,
       "bb": {
-        "attack_speed": 0,
+        "attack@attack_speed": 0,
         "attack@atk_scale": 1.55
-      }
+      },
+      "bbStr": {},
+      "rangeId": "3-21",
+      "rangeGrid": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          0,
+          3
+        ],
+        [
+          -1,
+          0
+        ],
+        [
+          -1,
+          1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          -1,
+          3
+        ],
+        [
+          -2,
+          0
+        ],
+        [
+          -2,
+          1
+        ]
+      ],
+      "prefabId": "skchr_oblvns_3",
+      "trigger": {
+        "rule": "ACTIVE_RANGE",
+        "rawRule": "DEFAULT",
+        "customRangeGrid": [
+          [
+            2,
+            0
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            3
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            2
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            -1,
+            0
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            -1,
+            2
+          ],
+          [
+            -1,
+            3
+          ],
+          [
+            -2,
+            0
+          ],
+          [
+            -2,
+            1
+          ]
+        ]
+      },
+      "index": 2,
+      "overrideTokenKey": null,
+      "default": false
     }
   ]
 }

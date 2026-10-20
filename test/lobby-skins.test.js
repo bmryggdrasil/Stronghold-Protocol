@@ -8,6 +8,9 @@
 // the generic one (a match method that is missing → ROOM_STARTED 'stored for the next match').
 import { describe, test, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import { startServer } from '../server/index.js';
 import { StubMatch } from '../server/match/StubMatch.js';
@@ -57,13 +60,16 @@ async function createRoom(c, mode = 'coop', difficulty = 'NORMAL') {
 describe('room.skins (lobby, stub match)', () => {
   let srv;
   let pool;
+  let pluginsDir;
   const cap = quietLog();
   before(async () => {
-    srv = await startServer({ port: 0, host: '127.0.0.1', log: cap.log, MatchClass: RecordingStub, heavyBurst: 12, heavyPerSec: 4 });
+    // This protocol/stub test needs vanilla operators only, independent of installed owner cosmetics/content.
+    pluginsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-lobby-skins-'));
+    srv = await startServer({ port: 0, host: '127.0.0.1', pluginsDir, log: cap.log, MatchClass: RecordingStub, heavyBurst: 12, heavyPerSec: 4 });
     pool = clientPool(() => `ws://127.0.0.1:${srv.port}/ws`);
   });
   afterEach(async () => { RecordingStub.instances = []; await pool.closeAll(); });
-  after(async () => { await srv?.close(); });
+  after(async () => { await srv?.close(); if (pluginsDir) fs.rmSync(pluginsDir, { recursive: true, force: true }); });
 
   test('the wire check runs first: a real skinId passes, junk is BAD_MSG and nothing is stored', async () => {
     const c = await pool.player('Wire');

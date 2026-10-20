@@ -708,6 +708,13 @@ changing a default skill requires keeping `skill` equal to its `skills[]` entry.
 **Compact operators** (`operators` manifest files; `schemas/records.schema.json`): one object or an array, with `op: 1`,
 `charId`, `name`, `profession`, `subProfessionId`, `position`, `rarity`, `as`, `forms.normal`, `forms.elite` and `skills`.
 Each form supplies `stats` and `rangeGrid`; optional form `skills`, `trait` and `talents` override the shared ones.
+Optional exact training keys in the same `forms` object (`"2/60/7/1"` = phase/level/skillLevel/equipLevel, DATA.md §18)
+override the `normal` / `elite` fallback for that status. A form may include `modules[]` in DATA.md §2.2 format and
+`potDown` stat leaves in §2.3 format; module levels must match the selected status. Module attributes are finite
+numbers in the existing stat vocabulary, and module names are derived from these records. Chained talent potential
+data is retained, including module talents. The ordinary DIY and loadout composition applies all these values; the
+expander does not synthesize missing ranks or module stages. Form `immunities`, `rangeId`, `projectile`, `canHitFly`
+and `targetPriority` use the same DATA.md types. Old operators with only `normal` / `elite` keep their prior behavior.
 A MELEE form may set `placeOnRanged: true` [ASSUMED] (no official plugin source; the Simplified trait line still places when the flag is absent). The expander copies only that boolean onto the shop chess and the 自选 form. A RANGED form's flag, and any value other than `true`, is ignored.
 `skills` has exactly one `default: true`, and each skill supplies `skillId`; the expander fills index, SP, trigger,
 blackboards and display fields. `as: "chess"` needs `chess: { tier, bonds, price?, garrisonIds?, sellPrice?, identifier?,

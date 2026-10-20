@@ -15,6 +15,7 @@ import { buildContentSet } from '../../server/plugins/contentSet.js';
 import { createPluginRegistry } from '../../server/plugins/registry.js';
 import { officialBbRange } from '../../shared/plugins/officialBounds.js';
 import { PLUGIN_LIMITS } from '../../shared/plugins/manifest.js';
+import { atPotential } from '../../shared/potential.js';
 
 const id = 'char_999_test', status = { phase: 1, level: 5, skillLevel: 4, equipLevel: 0 };
 function tables() {
@@ -40,6 +41,8 @@ test('official derivation shares builder interpolation, full potential, skill ra
   const u = deriveOfficialUnit(tables(), id, [status]); const f = Object.values(u.forms)[0];
   assert.equal(f.stats.atk, 170); assert.equal(f.skills[0].bb.atk, 0.4); assert.equal(f.talents[0].bb.atk, 0.2);
   assert.deepEqual(f.rangeGrid, [[0, 0], [0, 1]]); assert.equal(u.profession, 'WARRIOR'); assert.deepEqual(u.tags, ['DPS']);
+  assert.equal(atPotential(f, 1).stats.atk, 150, 'the importer retains the ordinary potential ATK step');
+  assert.equal(atPotential(f, 1).talents[0].bb.atk, 0.1, 'lower-potential talent candidates use the shared builder annotation');
   assert.throws(() => deriveOfficialUnit(tables(), 'missing', [status]), /missing/);
   const ts = tables(); ts.rangeTable = {}; assert.throws(() => deriveOfficialUnit(ts, id, [status]), /range/);
   const missingSkill = tables(); missingSkill.charTable[id].skills.push({ skillId: 'missing-skill' });

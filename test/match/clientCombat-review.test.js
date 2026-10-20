@@ -10,6 +10,9 @@
 //   * b.pool numbers are exact and a client that emptied the pool as it saw it ends the fight as cleared.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { PHASE } from '../../shared/constants.js';
 import { buildBattleSpec, createBattleFromSpec, compactResult, resultDigest } from '../../server/sim/spec.js';
 import { validateClientResult, specBounds, HeadlessPacer, HeadlessJob, runHeadless } from '../../server/match/fields.js';
@@ -83,10 +86,15 @@ test('stale b.progress / b.result after the match ended are ignored (ok), other 
 });
 
 let srv = null;
-after(async () => { if (srv) await srv.close(); });
+// The wire regression needs vanilla content only; installed cosmetics are unrelated to stale reports.
+const pluginsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-client-combat-review-'));
+after(async () => {
+  try { if (srv) await srv.close(); }
+  finally { fs.rmSync(pluginsDir, { recursive: true, force: true }); }
+});
 
 test('platform: a rid-less b.progress that reaches no match gets no error frame (a request with a rid still does)', async () => {
-  srv = await startServer({ port: 0, host: '127.0.0.1', quiet: true });
+  srv = await startServer({ port: 0, host: '127.0.0.1', pluginsDir, quiet: true });
   const c = await TestClient.connect(`ws://127.0.0.1:${srv.port}/ws`);
   try {
     await c.hello('Stale');

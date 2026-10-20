@@ -3,7 +3,7 @@
 // 全技能、双天赋、特性与模组 (LOR-Y) 完整实现及 Fever 狂热机制复刻.
 // Note flight and S3 priorities: https://prts.wiki/w/丰川祥子 (notes under 天赋 and S1–S3 remarks).
 
-import { num, talentBb, traitBb, skillRec, up, installAura } from '../kits/shared/tier1.js';
+import { num, talentBb, traitBb, skillRec, up, installAura, moduleOn } from '../kits/shared/tier1.js';
 import { sortEnemyTargets, canTargetEnemy } from '../../targeting.js';
 import { hasHp } from '../../damage.js';
 import { dirVec } from '../../dir.js';
@@ -19,6 +19,7 @@ const S3_X = 'skx_op_oblvns_3';
 const isS1 = (id) => id === S1 || id === S1_X;
 const isS2 = (id) => id === S2 || id === S2_X;
 const isS3 = (id) => id === S3 || id === S3_X;
+const moduleY = (chess) => moduleOn(chess) && chess.module.id === 'uniequip_002_oblvns';
 
 const FEVER_CAP = 450;
 const FEVER_DURATION = 20;
@@ -87,7 +88,7 @@ function emitNote(battle, unit, {
     age: 0, createdAt: battle.time, trackAt: battle.time + noteCfg.freeTime, nextCheck: battle.time + noteCfg.update,
     outsideAt: null, alive: true, piercingUntil: 0, hitTargets: new Set(),
     visual, type, scale, attack: unit.s.atk * unit.s.atkScaleMul, impactFx,
-    dmgMul: unit.blocking.length || (unit.skill?.active && unit.def?.hasModuleY) ? 1 : rangedScale,
+    dmgMul: unit.blocking.length || (unit.skill?.active && moduleY(unit.def?.raw)) ? 1 : rangedScale,
     isSkill, tag, motion, cfg: noteCfg, rangeKeys: new Set(unit.rangeKeys || []),
   };
   notes.push(note);
@@ -275,12 +276,13 @@ export default {
     const t0 = talentBb(chess, 0); // 颂乐音符
     const t1 = talentBb(chess, 1); // 毋畏遗忘
     const tb = traitBb(chess);
-    const b1 = bbOf(chess, S1);
-    const b2 = bbOf(chess, S2);
-    const b3 = bbOf(chess, S3);
+    const b1 = { ...bbOf(chess, S1), ...bbOf(chess, S1_X) };
+    const b2 = { ...bbOf(chess, S2), ...bbOf(chess, S2_X) };
+    const b3 = { ...bbOf(chess, S3), ...bbOf(chess, S3_X) };
 
-    const grid3 = skillRec(chess, S3)?.rangeGrid ?? R3_21;
+    const grid3 = (skillRec(chess, S3_X) ?? skillRec(chess, S3))?.rangeGrid ?? R3_21;
     const rangedScale = num(tb.atk_scale, 0.8);
+    const hasModuleY = moduleY(chess);
 
     // T1 values (base: def 3%, res 2%, max 10; module: def 5%, res 2.5%, max 12)
     const defPenPerNote = num(t0.def_penetrate_ratio, 0.03);
@@ -306,7 +308,7 @@ export default {
 
     // S2 parameters
     const s2AtkPct = num(b2['attack@atk'], 0.75);
-    const s2Aspd = num(b2['attack@attack_speed'], 110);
+    const s2Aspd = num(b2.attack_speed ?? b2['attack@attack_speed'], 110);
 
     // S3 parameters
     const s3AtkScale = num(b3['attack@atk_scale'], 1.8);
@@ -321,7 +323,7 @@ export default {
         },
         dmgMul: (battle, unit, target) => {
           // If in skill and carrying LOR-Y module: "技能期间远程攻击不再降低攻击力"
-          if (unit.skill?.active && unit.def?.hasModuleY) return 1;
+          if (unit.skill?.active && hasModuleY) return 1;
           if (target.blockedBy === unit) return 1;
           const [dr, dc] = dirVec(unit.dir);
           const fr = unit.tileR + dr, fc = unit.tileC + dc;
@@ -361,6 +363,8 @@ export default {
           onStart({ battle, unit }) {
             const curMode = unit.mem.oblvnsMode === 'organ' ? 'piano' : 'organ';
             unit.mem.oblvnsMode = curMode;
+            unit.form = curMode === 'organ' ? 'oblvnsS2Organ' : 'oblvnsS2Piano';
+            battle.fx('swap', { x: unit.x, y: unit.y, id: unit.id, form: unit.form });
 
             battle.removeBuff(unit, S2_BUFF);
             if (curMode === 'piano') {
@@ -381,6 +385,8 @@ export default {
             battle.fx('buff', { x: unit.x, y: unit.y, id: unit.id });
           },
           onEnd({ battle, unit }) {
+            unit.form = null;
+            battle.fx('swap', { x: unit.x, y: unit.y, id: unit.id, form: null });
             battle.removeBuff(unit, S2_BUFF);
             unit.profile.projectile = 'oblvnsSilent';
             unit.profile.dmgType = 'phys';
@@ -425,7 +431,7 @@ export default {
                 return;
               }
               const moduleAspdBuff = unit.findBuff(MODULE_ASPD_KEY);
-              const hasModuleCrowd = unit.def?.loadout?.moduleId === 'uniequip_002_oblvns' && moduleAspd > 0
+              const hasModuleCrowd = hasModuleY && moduleAspd > 0
                 && battle.enemiesInKeys(unit.rangeKeys, unit, unit.profile).length >= 2;
               if (hasModuleCrowd && !moduleAspdBuff) {
                 battle.addBuff(unit, { key: MODULE_ASPD_KEY, mods: { aspd: moduleAspd }, tags: ['module'] });
@@ -491,7 +497,7 @@ export default {
             installAura(battle, unit, {
               key: ASPD_AURA_KEY,
               value: aspdAura,
-              select: (a) => a.kind === 'op' && a.ownerId === unit.ownerId && unit.rangeKeySet && unit.rangeKeySet.has(a.tileR * 16 + a.tileC),
+              select: (a) => a.kind === 'op' && a.ownerId === unit.ownerId && unit.rangeKeySet && unit.rangeKeySet.has(a.tileR * COLS + a.tileC),
               mods: { aspd: aspdAura },
               interval: 0.5
             });

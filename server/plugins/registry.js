@@ -789,7 +789,7 @@ export function scanPlugins({ publicDir, dataDir, packsDir, pluginsDir }, { app 
   // plugin folders: plugins/<id>/plugin.json (manifest 2)
   if (pluginsDir) {
     for (const id of readDirSorted(pluginsDir)) {
-      if (id.startsWith('_')) continue; // the templates
+      if (id.startsWith('_')) continue; // templates and owner backups
       const dir = path.join(pluginsDir, id);
       let st;
       try { st = fs.statSync(dir); } catch { continue; }
@@ -895,6 +895,7 @@ function signature({ publicDir, dataDir, packsDir, pluginsDir }) {
   if (pluginsDir) {
     // each plugin folder (a link the owner made too) read for at most WALK_LIMITS.entries entries
     for (const n of readDirSorted(pluginsDir)) {
+      if (n.startsWith('_')) continue; // match scanPlugins: never walk templates or owner backups
       const abs = path.join(pluginsDir, n);
       let st;
       try { st = fs.statSync(abs); } catch { continue; }

@@ -5,6 +5,9 @@
 // the picks as m.private.diy.
 import { describe, test, before, after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import { startServer } from '../server/index.js';
 import { StubMatch } from '../server/match/StubMatch.js';
@@ -18,6 +21,9 @@ const T6B = 'chess_char_6_diy2_a';
 const SIEGE = { charId: 'char_112_siege', skillIndex: 2, uniEquipId: 'uniequip_002_siege' };
 const SHARP = { charId: 'char_609_acguad' };
 const SHARP_FULL = { charId: 'char_609_acguad', skillIndex: 2, uniEquipId: 'uniequip_002_acguad' };
+// Exercise the vanilla lobby independently of the server owner's installed plugins.
+const pluginsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-lobby-diy-'));
+after(() => fs.rmSync(pluginsDir, { recursive: true, force: true }));
 
 class RecordingStub extends StubMatch {
   static instances = [];
@@ -58,7 +64,7 @@ describe('room.diy (lobby, stub match)', () => {
   let pool;
   const cap = quietLog();
   before(async () => {
-    srv = await startServer({ port: 0, host: '127.0.0.1', log: cap.log, MatchClass: RecordingStub, heavyBurst: 12, heavyPerSec: 4 });
+    srv = await startServer({ port: 0, host: '127.0.0.1', pluginsDir, log: cap.log, MatchClass: RecordingStub, heavyBurst: 12, heavyPerSec: 4 });
     pool = clientPool(() => `ws://127.0.0.1:${srv.port}/ws`);
   });
   afterEach(async () => { RecordingStub.instances = []; await pool.closeAll(); });
@@ -133,7 +139,7 @@ describe('room.diy (lobby + real match)', () => {
   let pool;
   const cap = quietLog();
   before(async () => {
-    srv = await startServer({ port: 0, host: '127.0.0.1', log: cap.log, seedFn: () => 4242 });
+    srv = await startServer({ port: 0, host: '127.0.0.1', pluginsDir, log: cap.log, seedFn: () => 4242 });
     pool = clientPool(() => `ws://127.0.0.1:${srv.port}/ws`);
   });
   afterEach(async () => { await pool.closeAll(); });

@@ -46,3 +46,13 @@ test('the per-operator JP preference retains the existing per-slot Chinese fallb
   assert.equal(voiceLine(tree, a, 'select', voiceLangFor(a, 'cn', { [a]: 'jp' })).url, '/cn.mp3');
   assert.equal(voiceLine(tree, a, 'skill1', voiceLangFor(a, 'cn', { [a]: 'jp' })).url, '/jp.mp3');
 });
+
+test('JP-only collaboration operators speak their installed dub when the global or saved language is missing', () => {
+  const id = 'char_4217_makoto', audio = { voiceJp: { [id]: { select: '/jp.mp3' } } };
+  for (const global of ['cn', 'jp', 'en', 'kr']) {
+    const lang = voiceLangFor(id, global, { [id]: 'cn' }, { audio });
+    assert.equal(lang, 'jp');
+    assert.deepEqual(voiceLine(audio, id, 'select', lang), { url: '/jp.mp3', fallback: null });
+  }
+  assert.equal(voiceLangFor('char_999_silent', 'cn', {}, { audio }), 'cn', 'an operator with no dub stays silent');
+});

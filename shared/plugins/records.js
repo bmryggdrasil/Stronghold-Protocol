@@ -95,9 +95,10 @@ function operator(data, r, pluginId, validateDsl) {
     position: r.position, nationId: r.nationId ?? null, isNotObtainable: false,
     assets: { avatar: art, avatarGolden: art, portrait: art, portraitGolden: art, spine: art, subProfIcon: `sub_${r.subProfessionId}_icon`,
       ...(r.art?.ref ? { voice: r.art.ref } : {}), ...r.art?.assets },
-    moduleNames: {}, standsIn: [], forms: {}, ...b, ...(r.origin ? { origin: clone(r.origin) } : {}) };
+    moduleNames: Object.fromEntries(Object.values(r.forms).flatMap(f => (f.modules ?? []).map(m => [m.uniEquipId, { name: m.name ?? null, typeName: m.typeName ?? null }]))),
+    standsIn: [], forms: {}, ...b, ...(r.origin ? { origin: clone(r.origin) } : {}) };
   const form = (which, status) => {
-    const f = r.forms[which];
+    const f = r.forms[statusKey(status)] ?? r.forms[which];
     if (!object(f.stats) || !Array.isArray(f.rangeGrid)) fail('PLUGIN_RECORD_TYPE', r.charId, 'each form needs stats and rangeGrid');
     const skills = f.skills ?? r.skills;
     if (!Array.isArray(skills) || !skills.length || skills.filter(s => s.default === true).length !== 1) fail('PLUGIN_RECORD_SKILLS', r.charId, 'skills need exactly one default');
@@ -116,11 +117,14 @@ function operator(data, r, pluginId, validateDsl) {
     // composeUnitRecord copies that boolean onto the shop chess and a 自选 piece (GitHub #676).
     // Any other value, and the flag on a RANGED operator, is not stored.
     const placeOnRanged = r.position === 'MELEE' && f.placeOnRanged === true;
-    return { status, stats: { ...stats, ...f.stats }, immunities: {}, rangeId: null, rangeGrid: f.rangeGrid,
-      dmgType, attackKind, projectile: r.projectile ?? (attackKind === 'melee' ? 'none' : dmgType === 'heal' ? 'orb' : dmgType === 'arts' ? 'bolt' : 'arrow'),
-      canHitFly: r.canHitFly ?? (attackKind === 'ranged' && r.subProfessionId !== 'fortress'), targetPriority: r.targetPriority ?? null,
+    const modules = clone(f.modules ?? []);
+    if (modules.some(m => m.level !== status.equipLevel) || modules.length && status.equipLevel <= 0) fail('PLUGIN_RECORD_TYPE', r.charId, 'modules must match the form equipLevel');
+    return { status, stats: { ...stats, ...f.stats }, immunities: clone(f.immunities ?? {}), rangeId: f.rangeId ?? null, rangeGrid: f.rangeGrid,
+      dmgType, attackKind, projectile: f.projectile ?? r.projectile ?? (attackKind === 'melee' ? 'none' : dmgType === 'heal' ? 'orb' : dmgType === 'arts' ? 'bolt' : 'arrow'),
+      canHitFly: f.canHitFly ?? r.canHitFly ?? (attackKind === 'ranged' && r.subProfessionId !== 'fortress'), targetPriority: f.targetPriority ?? r.targetPriority ?? null,
       trait: text(f.trait ?? r.trait), talents: (f.talents ?? r.talents ?? []).map((t, index) => ({ index, name: '', tokenKey: null, hidden: false, fromModule: false, ...text(t) })),
-      skills: expanded, modules: [], tokens: [], displayTokens: [], ...b,
+      skills: expanded, modules, tokens: [], displayTokens: [], ...b,
+      ...(f.potDown ? { potDown: clone(f.potDown) } : {}),
       ...(placeOnRanged ? { placeOnRanged: true } : {}) };
   };
   if (r.as !== 'diy') {

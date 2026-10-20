@@ -73,13 +73,14 @@ export function installedArtReferences(root) {
  * Missing files count as a gap too (copying a manifest alone does not install art). */
 export function pluginArtGap(root) {
   const local = read(root, 'data/local-assets.json'), table = read(root, '.cache/gamedata/excel/character_table.json');
+  const installed = mergeLocalChars(read(root, 'data/assets.json'), local);
   const present = url => {
-    if (typeof url !== 'string' || !/^\/assets\/local\/[A-Za-z0-9_./-]+$/.test(url)
+    if (typeof url !== 'string' || !/^\/assets\/[A-Za-z0-9_./-]+$/.test(url)
       || url.split('/').some(p => p === '.' || p === '..')) return false;
     try { return fs.statSync(path.join(root, 'public', url)).isFile(); } catch { return false; }
   };
   return installedArtReferences(root).filter(id => {
-    const art = local.chars?.[id];
+    const art = installed.chars?.[id];
     const pics = ['avatar', 'portrait', ...(table[id]?.phases?.length >= 3 ? ['avatarE2', 'portraitE2'] : [])];
     if (pics.some(k => !present(art?.[k]))) return true;
     return ['front', 'back'].some(face => {

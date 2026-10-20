@@ -56,6 +56,10 @@ export class FxProjectiles {
     if (kind === 'chain' || kind === 'chainHeal') { if (tgt && tgt !== src) this._beam(src, tgt, kind === 'chainHeal' ? 0x7dffa8 : 0xc9a2ff, 0.22, 1, true); return; }
     if (kind === 'beam') { if (tgt && tgt !== src) this._beam(src, tgt, src.isEnemy ? 0xff7a5a : 0xffe6a8, 0.18, 0.15); return; }
     const spec = PROJ[kind];
+    if (!tgt && (kind === 'sonicNote' || kind === 'organNote' || kind === 'pianoBeam')) {
+      const facing = (src.facing || 1) >= 0 ? 1 : -1;
+      tgt = { x: src.x + facing * 3.5, y: src.y, z: src.z || 0, alive: true };
+    }
     if (!spec || !tgt) {
       if (kind === 'none' || !kind) this._slashAt = src.id;
       return;
@@ -81,6 +85,74 @@ export class FxProjectiles {
     this._dressProj(pr);
     this.projs.push(pr);
     if (this.rich) this._muzzle(pr);
+  }
+
+  /** One client-rendered copy of a deterministic, kit-simulated Ave Mujica note. */
+  musicNote(extra, x, y) {
+    const ownerId = extra?.id, noteId = extra?.noteId;
+    if (ownerId == null || !Number.isSafeInteger(noteId)) return;
+    const phase = extra.phase;
+    const index = this.projs.findIndex((p) => p.noteSim && p.noteOwnerId === ownerId && p.noteId === noteId);
+    if (phase === 'launch') {
+      const kind = PROJ[extra.visual] ? extra.visual : 'sonicNote';
+      const pr = this._takeProj();
+      const dx = Number.isFinite(extra.dx) ? extra.dx : 1;
+      const dy = Number.isFinite(extra.dy) ? extra.dy : 0;
+      pr.kind = kind; pr.spec = PROJ[kind]; pr.src = this._viewOf(ownerId); pr.tgt = null;
+      pr.noteSim = true; pr.noteOwnerId = ownerId; pr.noteId = noteId; pr.noteTargetId = null;
+      pr.noteState = 'free'; pr.noteAge = 0; pr.noteDistance = 0;
+      pr.noteX = Number.isFinite(x) ? x : (pr.src?.x || 0); pr.noteY = Number.isFinite(y) ? y : (pr.src?.y || 0);
+      pr.noteFreeX = pr.noteX; pr.noteFreeY = pr.noteY;
+      pr.noteVx = dx; pr.noteVy = dy;
+      pr.noteFreeSpeed = Math.max(0.1, Number(extra.freeSpeed) || 1.3);
+      pr.noteTrackSpeed = Math.max(0.1, Number(extra.trackSpeed) || 2);
+      pr.noteTurn = Math.max(0, Math.min(1, Number(extra.turn) || 0));
+      pr.noteSine = Math.max(0, Number(extra.sine) || 0);
+      pr.noteSineSign = extra.sineSign < 0 ? -1 : 1;
+      pr.noteVisual = kind;
+      pr.tx = pr.noteX + dx * 0.25; pr.ty = pr.noteY + dy * 0.25;
+      pr.tz = 0.65; pr.x0 = pr.noteX; pr.y0 = pr.noteY; pr.z0 = 0.65;
+      pr.t = 0; pr.dur = Infinity; pr.fade = 0; pr.hit = false; pr.emit = 0; pr.arc = 0;
+      pr.ang = Math.atan2(-dy, dx); pr.glow = pr.spec.glow; pr.trailTint = pr.spec.trail ?? pr.spec.glow;
+      this._dressProj(pr);
+      this.projs.push(pr);
+      if (this.rich) this._muzzle(pr);
+      return;
+    }
+    if (index < 0) return;
+    const pr = this.projs[index];
+    if (Number.isFinite(x)) pr.noteX = x;
+    if (Number.isFinite(y)) pr.noteY = y;
+    if (Number.isFinite(extra.dx)) pr.noteVx = extra.dx;
+    if (Number.isFinite(extra.dy)) pr.noteVy = extra.dy;
+    if (phase === 'target') {
+      pr.noteTargetId = extra.targetId ?? null;
+      pr.tgt = pr.noteTargetId == null ? null : this._viewOf(pr.noteTargetId);
+      pr.noteState = pr.noteTargetId == null ? 'free' : 'homing';
+      pr.noteFreeX = pr.noteX; pr.noteFreeY = pr.noteY; pr.noteDistance = 0;
+      return;
+    }
+    if (phase === 'pierce') {
+      pr.noteTargetId = null; pr.tgt = null; pr.noteState = 'piercing';
+      pr.noteFreeX = pr.noteX; pr.noteFreeY = pr.noteY; pr.noteDistance = 0;
+      pr.notePierceSpeed = 3;
+      return;
+    }
+    if (phase === 'impact') {
+      pr.tx = pr.noteX; pr.ty = pr.noteY;
+      const target = this._viewOf(extra.targetId);
+      pr.tz = target ? bodyZ(this.ctx.cam(), target, SHOT_HEIGHT.aim) : 0.65;
+      this._impact(pr, this.ctx.cam());
+      return;
+    }
+    if (phase === 'hit') {
+      pr.tx = pr.noteX; pr.ty = pr.noteY;
+      const target = this._viewOf(extra.targetId);
+      pr.tz = target ? bodyZ(this.ctx.cam(), target, SHOT_HEIGHT.aim) : 0.65;
+      this._impact(pr, this.ctx.cam());
+    }
+    this.projs.splice(index, 1);
+    this._releaseProj(pr);
   }
 
   /** A pooled projectile record: trail + halo + core sprites (additive, above units) and a ground shadow. */
@@ -112,14 +184,16 @@ export class FxProjectiles {
   _dressProj(pr) {
     const spec = pr.spec, look = spec.look;
     const thin = look === 'tracer' || look === 'dart';
+    const isStaff = look === 'staff';
+    const isNote = look === 'note';
     const { trail, halo, core, shadow } = pr;
-    trail.texture = this.tex[thin ? 'tracer' : 'streak'];
+    trail.texture = this.tex[isStaff ? 'staffBeam' : thin ? 'tracer' : 'streak'];
     trail.tint = thin ? spec.tint : pr.trailTint;
     trail.visible = look !== 'boomerang';
     halo.texture = this.tex.glow;
     halo.tint = pr.glow;
     halo.visible = true;
-    core.texture = this.tex[look === 'boomerang' ? 'boomerang' : thin ? 'dot' : 'orb'];
+    core.texture = this.tex[look === 'boomerang' ? 'boomerang' : isNote ? 'note' : isStaff ? 'spark' : thin ? 'dot' : 'orb'];
     core.tint = spec.tint;
     core.rotation = 0;
     core.visible = true;
@@ -130,6 +204,8 @@ export class FxProjectiles {
   _releaseProj(pr) {
     pr.trail.visible = pr.halo.visible = pr.core.visible = pr.shadow.visible = false;
     pr.src = pr.tgt = null;
+    pr.noteSim = false;
+    pr.noteOwnerId = pr.noteId = pr.noteTargetId = null;
     this.projFree.push(pr);
   }
 
@@ -141,7 +217,8 @@ export class FxProjectiles {
     for (let i = 0; i < this.projs.length; i++) {
       const pr = this.projs[i];
       const look = pr.spec.look;
-      const live = look === 'boomerang' ? this._stepBoomerang(pr, dt, cam, rich)
+      const live = pr.noteSim ? this._stepMusicNote(pr, dt, cam)
+        : look === 'boomerang' ? this._stepBoomerang(pr, dt, cam, rich)
         : look === 'mortar' ? this._stepMortar(pr, dt, cam, rich) : this._stepShot(pr, dt, cam, rich);
       if (!live) { this._releaseProj(pr); continue; }
       this.projs[w++] = pr;
@@ -149,10 +226,75 @@ export class FxProjectiles {
     this.projs.length = w;
   }
 
+  /** Follow the sim's free sine / homing state transitions; noteTarget events resynchronise target changes. */
+  _stepMusicNote(pr, dt, cam) {
+    const gameDt = dt * this._ts();
+    pr.noteAge += gameDt;
+    const x0 = pr.noteX, y0 = pr.noteY;
+
+    if (pr.noteState === 'homing') {
+      const target = pr.tgt;
+      if (!target || target.destroyed || target.alive === false) {
+        pr.noteTargetId = null; pr.tgt = null; pr.noteState = 'free';
+        pr.noteFreeX = pr.noteX; pr.noteFreeY = pr.noteY; pr.noteDistance = 0;
+      } else {
+        const dx = target.x - pr.noteX, dy = target.y - pr.noteY, d = Math.hypot(dx, dy);
+        if (d > 1e-6) {
+          const frameWeight = 1 - Math.pow(1 - pr.noteTurn, gameDt * 30);
+          const vx = pr.noteVx * (1 - frameWeight) + dx / d * frameWeight;
+          const vy = pr.noteVy * (1 - frameWeight) + dy / d * frameWeight;
+          const n = Math.hypot(vx, vy);
+          if (n > 1e-6) { pr.noteVx = vx / n; pr.noteVy = vy / n; }
+        }
+        pr.noteX += pr.noteVx * pr.noteTrackSpeed * gameDt;
+        pr.noteY += pr.noteVy * pr.noteTrackSpeed * gameDt;
+      }
+    }
+
+    if (pr.noteState === 'piercing') {
+      pr.noteX += pr.noteVx * pr.notePierceSpeed * gameDt;
+      pr.noteY += pr.noteVy * pr.notePierceSpeed * gameDt;
+    } else if (pr.noteState === 'free') {
+      pr.noteDistance += pr.noteFreeSpeed * gameDt;
+      const periods = Math.min(3, Math.floor(pr.noteDistance / (Math.PI * 2)) + 1);
+      const lateral = pr.noteSineSign * pr.noteSine * periods * Math.sin(pr.noteDistance);
+      pr.noteX = pr.noteFreeX + pr.noteVx * pr.noteDistance - pr.noteVy * lateral;
+      pr.noteY = pr.noteFreeY + pr.noteVy * pr.noteDistance + pr.noteVx * lateral;
+    }
+
+    const p = cam.project(pr.noteX, pr.noteY, 0.65, this._p);
+    const q = cam.project(x0, y0, 0.65, this._q);
+    const seg = Math.hypot(p.x - q.x, p.y - q.y);
+    if (seg > 0.5) pr.ang = Math.atan2(p.y - q.y, p.x - q.x);
+    const s = p.s, hs = pr.spec.head * s;
+    pr.trail.position.set(p.x, p.y);
+    pr.trail.rotation = pr.ang;
+    pr.trail.scale.set(Math.max(0.001, Math.min(pr.spec.len * s, Math.max(seg * 4, s * 0.12)) / 128), (pr.spec.width * s) / 20);
+    pr.trail.alpha = 0.82;
+    pr.halo.position.set(p.x, p.y);
+    pr.halo.scale.set((hs / 128) * (1 + 0.1 * Math.sin(pr.noteAge * 24)));
+    pr.halo.alpha = 0.82;
+    pr.core.position.set(p.x, p.y);
+    pr.core.rotation = pr.ang;
+    pr.core.scale.set((hs * 0.72) / 64);
+    pr.core.alpha = 1;
+    return true;
+  }
+
   /** Screen point of a straight / lobbed shot at flight fraction k (a parabola of height `arc` over the line). */
   _shotPoint(pr, k, cam, out) {
-    const x = pr.x0 + (pr.tx - pr.x0) * k, y = pr.y0 + (pr.ty - pr.y0) * k;
-    const z = pr.z0 + (pr.tz - pr.z0) * k + (pr.arc ? pr.arc * 4 * k * (1 - k) : 0);
+    let x = pr.x0 + (pr.tx - pr.x0) * k, y = pr.y0 + (pr.ty - pr.y0) * k;
+    let z = pr.z0 + (pr.tz - pr.z0) * k + (pr.arc ? pr.arc * 4 * k * (1 - k) : 0);
+    if (pr.spec?.sine) {
+      const dx = pr.tx - pr.x0, dy = pr.ty - pr.y0;
+      const d = Math.hypot(dx, dy);
+      if (d > 1e-4) {
+        const nx = -dy / d, ny = dx / d;
+        const amp = pr.spec.sine * Math.sin(k * Math.PI * 4);
+        x += nx * amp;
+        y += ny * amp;
+      }
+    }
     return cam.project(x, y, z, out);
   }
 
@@ -373,6 +515,12 @@ export class FxProjectiles {
     const x = p.x, y = p.y, s = p.s;
     const rich = this.rich;
     switch (spec.hit) {
+      case 'music':
+        this.particle('glow', x, y, { tint: pr.glow, life: 0.28, s0: (s / 128) * 0.8, s1: (s / 128) * 1.4, a0: 0.95, a1: 0 });
+        this.particle('shock', x, y, { tint: pr.glow, life: 0.26, s0: (s / 128) * 0.2, s1: (s / 128) * 1.1, a0: 0.9, a1: 0 });
+        this.particle('note', x, y, { tint: pr.trailTint, life: 0.35, s0: (s / 64) * 0.4, s1: (s / 64) * 0.6, a0: 1, a1: 0, rot: (Math.random() - 0.5) * 0.5, vy: -s * 0.5 });
+        if (rich) this.burst(x, y, s, 5, pr.trailTint, { speed: 2.2, life: 0.35, tex: 'note', size: 0.32 });
+        break;
       case 'arts':
         this.particle('glow', x, y, { tint: pr.glow, life: 0.24, s0: (s / 128) * 0.7, s1: (s / 128) * 1.2, a0: 0.95, a1: 0 });
         this.particle('shock', x, y, { tint: pr.glow, life: 0.26, s0: (s / 128) * 0.25, s1: (s / 128) * 1.05, a0: 0.9, a1: 0 });

@@ -18,6 +18,30 @@ import { guard } from '../helpers/contentFixtures.js';
 import { diyRecord } from '../../shared/diy.js';
 import { meleeOnHighGround } from '../../shared/highGround.js';
 const base = getData(), context = { pluginId: 'data-demo' };
+test('exact training forms preserve modules and potential while rejecting malformed module attributes and status keys', () => {
+  const r = guard(); r.as = 'diy';
+  const mod = { uniEquipId: 'uniequip_test', name: 'Test', typeName: 'TEST-X', typeIcon: null, icon: 'uniequip_test',
+    level: 3, attr: { atk: 12 }, traitOverride: null, talentChanges: [] };
+  r.forms.elite.modules = [mod];
+  r.forms['2/60/7/1'] = { ...structuredClone(r.forms.elite), modules: [{ ...mod, level: 1 }] };
+  r.forms['2/60/7/3'] = { ...structuredClone(r.forms.elite), potDown: { 0: { 'stats.atk': 250 } } };
+  const result = expandRecords(base, [r], context);
+  assert.deepEqual(result.problems, []);
+  const form = result.data.backups.units[r.charId].forms['2/60/7/3'];
+  assert.deepEqual(form.potDown, { 0: { 'stats.atk': 250 } });
+  assert.equal(form.modules[0].attr.atk, 12);
+  assert.equal(result.data.backups.units[r.charId].moduleNames.uniequip_test.typeName, 'TEST-X');
+  for (const mutate of [
+    x => { x.forms.elite.modules[0].attr.atk = 'oops'; },
+    x => { x.forms.elite.modules[0].attr.unknown = 1; },
+    x => { x.forms['not-a-status'] = x.forms.elite; },
+    x => { x.forms['2/60/7/3'].potDown[0]['stats.atk'] = 'oops'; },
+    x => { x.forms['2/60/7/3'].modules[0].level = 1; },
+  ]) {
+    const bad = structuredClone(r); mutate(bad);
+    assert.ok(expandRecords(base, [bad], context).problems.some(p => p.code === 'PLUGIN_RECORD_TYPE'));
+  }
+});
 test('complete normal/elite pair and all DIY forms; behavior survives production DIY composition', () => {
   const r = expandRecords(base, [guard()], context); assert.deepEqual(r.problems, []);
   assert.deepEqual(validateData(r.data), []);

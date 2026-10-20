@@ -244,6 +244,26 @@ The `stem` of a Spine model is the upstream file name. Two examples: `char_107_l
 
 ### Official operator art referenced by plugins (0.3.1)
 
+`node tools/fetch-assets.mjs` also plans installed plugins' official operator references, including disabled plugins,
+through the same bounded JSON-only discovery and `character_table` membership check. It downloads their base / E2
+avatars and portraits, front / back Spine models, official skill icons, battle SFX and battle voice slots from the
+existing asset sources. Setup's on-demand official tables are shared with this path; offline and dry-run modes never
+fetch missing official tables. No plugin script runs during discovery or installation.
+
+For an existing installation, `node tools/fetch-assets.mjs --only-operator=char_4182_oblvns --strict` installs or repairs
+one planned operator and merges the generated entries into `data/assets.json`, preserving unrelated entries and fonts.
+The operator must already be in the shipped roster or referenced by an installed plugin and the official tables.
+This mode rejects `--prune`. `--strict` reports unavailable planned files as a failure so a repair can be retried.
+Complete downloaded plugin art also closes setup's extraction gap; setup checks the installed files from the
+combined download/local manifests before offering another local-client extraction.
+The same command with `char_4217_makoto` repairs 结城理. Plugin records that use namespaced skill IDs should set each
+skill's `iconId` to the corresponding official icon ID; `art.ref` alone chooses character art and the voice bank.
+
+Official LINKAGE-only operators have a Japanese recording under `Voice/` and no Chinese / English / Korean dub;
+the manifest lists the available Japanese tree. Following a missing global or saved dub uses an installed dub
+(Chinese first, then Japanese, English, Korean, own-language). The preview reads the selected tree's slots, including
+when `audio.voice` has no entry, so both listening and combat can use a Japanese-only operator without a saved override.
+
 `node tools/setup.mjs --local` also extracts official operators referenced by installed plugins but absent from
 `data/chess.json` and `data/backups.json.units`. It reuses the bounded, JSON-only W5 discovery (`fx.unit`,
 `origin.charId`, `art.ref`, `art.assets`, official-format ids/keys, including Forge-derived records), including

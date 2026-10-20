@@ -278,6 +278,10 @@ export function onlyOperatorPlan(plan, charId, subProfessionId = null) {
   const voice = t.audio?.voice?.[charId];
   const voiceJp = t.audio?.voiceJp?.[charId];
   const sfx = t.audio?.sfx?.units?.[charId];
+  const extraVoice = {};
+  for (const key of Object.keys(VOICE_OPTIONAL_TREES)) if (t.audio?.[key]?.[charId]) extraVoice[key] = { [charId]: t.audio[key][charId] };
+  const nativeTypes = t.audio?.voiceNativeLangType;
+  if (nativeTypes) extraVoice.voiceNativeLangType = nativeTypes;
   const template = {
     ...t,
     chars: { [charId]: rec },
@@ -287,9 +291,10 @@ export function onlyOperatorPlan(plan, charId, subProfessionId = null) {
     prof: { sub: subProfessionId && sub[subProfessionId] ? { [subProfessionId]: sub[subProfessionId] } : {} },
     enemies: {}, tokens: {}, bonds: {}, items: {}, bands: {}, ui: {},
     audio: {
-      ...(sfx ? { sfx: { units: { [charId]: sfx } } } : null),
+      ...(sfx ? { sfx: { units: { [charId]: sfx }, pools: t.audio.sfx.pools || {} } } : null),
       ...(voice ? { voice: { [charId]: voice } } : null),
       ...(voiceJp ? { voiceJp: { [charId]: voiceJp } } : null),
+      ...extraVoice,
     },
     bossBgm: {},
   };
@@ -810,6 +815,10 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     const tree = {};
     for (const [charId, slots] of voiceSlotsByChar) {
       if (!chars[charId]) continue;          // only the operators this game can field (`chars`: the 138 pool charIds and the 自选 picks)
+      // The official LINKAGE dub uses Voice/ (JP). These operators have no CN/EN/KR recordings;
+      // publishing nonexistent dubs hides the available JP-only default from the client.
+      const declared = charword?.voiceLangDict?.[charId]?.dict;
+      if (declared?.LINKAGE && !dirOf && lang !== 'jp' && !declared[({ cn: 'CN_MANDARIN', en: 'EN', kr: 'KR' })[lang]]) continue;
       const dir = dirOf ? dirOf(charId) : null;
       if (dirOf && !dir) continue;
       const v = {};

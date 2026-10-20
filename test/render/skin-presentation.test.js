@@ -11,7 +11,7 @@ const bodyOf = (name) => {
   return start < 0 ? '' : source.slice(start, source.indexOf('\n  }', start) + 4);
 };
 
-function fixture() {
+function fixture(chess = {}) {
   const start = source.indexOf('  const skinOf = ');
   const end = source.indexOf('\n\n', source.indexOf('  const shownSkin = ', start));
   const s = source.indexOf('    setSettings(s) {');
@@ -23,7 +23,7 @@ function fixture() {
     setWorld() {}
     setDir() {}
   }
-  const factory = new Function('renderInfo', 'ctx', 'settings', 'infos', 'views', 'dropView', 'UnitView', `
+  const factory = new Function('renderInfo', 'ctx', 'settings', 'infos', 'views', 'dropView', 'UnitView', 'data', `
     let mode = 'battle', lastPrep = null;
     const board3d = null;
     function resize() {} function syncOfficialFx() {} function heightAt() { return 0; }
@@ -34,7 +34,8 @@ function fixture() {
       ${settingsMethod},
       readOnly(units) { mode = 'prep'; lastPrep = { units }; setPrep(); }
     };`);
-  const api = factory(renderInfo, ctx, settings, infos, views, (id) => { dropped.push(id); views.delete(id); }, UnitView);
+  const api = factory(renderInfo, ctx, settings, infos, views, (id) => { dropped.push(id); views.delete(id); }, UnitView,
+    { chess: id => chess[id] });
   return { api, infos, views, dropped };
 }
 const unit = (id, ownerId = 'p_1', skin = SKIN) => ({ id, uid: id, kind: 'op', side: 'ally', ownerId, skin, spine: OP });
@@ -84,4 +85,20 @@ test('boss partner views refresh immediately when the setting or local identity 
   assert.equal(views.get('m:1').info.skin, null);
   api.setSettings({ otherSkins: true });
   assert.equal(views.get('m:1').info.skin, SKIN);
+});
+
+test('borrowed art keeps namespaced shop and DIY skin choices; stand-ins follow their effective body', () => {
+  const custom = 'char_x_example_operator', defId = 'chess_x_example_operator_a';
+  const { api, infos } = fixture({ [defId]: { charId: custom } });
+  api.applyInfo({ ...unit(1), defId });
+  api.applyInfo({ ...unit(2), defId: 'diy_6_a', diy: { charId: custom } });
+  api.applyInfo({ ...unit(3), defId, standInFor: custom });
+  api.setSkins([{ playerId: 'p_1', skins: { [custom]: SKIN } }]);
+  assert.equal(infos.get(1).skin, SKIN);
+  assert.equal(infos.get(2).skin, SKIN);
+  assert.equal(infos.get(3).skin, null, 'the replaced operator\'s outfit does not dress its stand-in');
+  api.setSkins([{ playerId: 'p_1', skins: { [OP]: SKIN } }]);
+  assert.equal(infos.get(1).skin, null);
+  assert.equal(infos.get(2).skin, null);
+  assert.equal(infos.get(3).skin, SKIN);
 });

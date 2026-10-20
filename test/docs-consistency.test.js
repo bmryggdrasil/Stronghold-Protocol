@@ -919,8 +919,12 @@ test('干员战斗语音 (DESIGN §21.30): the manifest data, the official prior
   // 0.2.2: the Japanese dub beside the Chinese one (audio.voiceJp, settings 语音语言, the full zip's switch)
   const voiceJp = manifest.audio?.voiceJp ?? {};
   assert.ok(charIds.every((id) => voiceJp[id]), 'every Chinese-voiced operator has its JP tree');
-  assert.equal(voice.char_4217_makoto, undefined, 'the P3R mirror has a JP-only line set, not the CN tree');
-  assert.equal(Object.keys(voiceJp).length, charIds.length + 1, 'Makoto adds a JP-only tree');
+  const jpOnly = ['char_4182_oblvns', 'char_4217_makoto'];
+  for (const id of jpOnly) {
+    assert.equal(voice[id], undefined, `${id}: the collaboration has no Chinese dub`);
+    assert.ok(voiceJp[id], `${id}: its Japanese dub is installed`);
+  }
+  assert.equal(Object.keys(voiceJp).length, charIds.length + jpOnly.length, 'both collaboration plugins add JP-only trees');
   assert.equal(manifest.stats.voiceJpChars, Object.keys(voiceJp).length);
   assert.match(doc('docs/ASSETS.md'), /voiceJp: \{ \[charId\]: \{ …the slots of `voice` \} \}/);
   assert.match(doc('docs/DEPLOY.md'), /`FULL_ZIP_JP_VOICE` 改成 `false` 时/);

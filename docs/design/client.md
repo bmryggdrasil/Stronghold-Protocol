@@ -10,6 +10,12 @@ skins so the other-player switch restores loaded units when re-enabled, includin
 without restarting playback or changing the sim / BattleSpec. Resolve every surface's skin from the effective
 operator body (official `activity_table` `charShopChessDatas.backupCharId` for stand-ins, the pick for DIY slots).
 Outfits following that body and live refresh timing are cosmetic UI assumptions; gameplay and golden results stay unchanged.
+Content operators borrowing official art resolve their outfit catalogue through `assets.spine`, but their seat choices
+remain keyed by their own `charId`; live views use the DIY pick or actual chess identity before the borrowed model key.
+An owner's explicit `tools/install-official-skins.mjs` run installs checked cosmetic outfit plugins, never server-side
+downloads or generated-data changes. The two integrated operators' outfits retain true Back models. [ASSUMED] Other
+outfits reuse Front as Back to retain their clothing within the visual-set size cap; a bounded subset can install all
+available Back models. See SKINS.md for installation and limits.
 
 **Studio test console (0.3.1).**
 
@@ -393,9 +399,12 @@ Settings persist `textSize` (sm/md/lg/xl; default sm), `voiceLang` (cn/jp/en/kr;
 on read and is not written back. CSS text uses `--t`;
 the layout rem, camera and board geometry stay unchanged. Larger text and translated controls wrap within the settings
 modal. The normal roster detail and chosen DIY cards expose each operator's voice preference, shared across that
-charId's forms, listing only the dubs this server has and offering a preview. An absent override follows the global
-preference, then the own-language dub when the switch is on and the operator has one, then Chinese. A missing line
-falls back to the Chinese file of the same name. Changing the global language does not clear per-operator choices.
+charId's forms, listing only the dubs this server has and offering a preview. An available per-operator override wins,
+then the own-language dub when the switch is on, then the global preference when installed, then Chinese. If Chinese
+is absent too (official LINKAGE-only collaboration operators), use an installed Japanese, English, Korean or
+own-language dub in that order. The preview chooses slots from the resolved language tree, including a JP-only
+operator with no `audio.voice` entry. A missing line falls back to the Chinese file of the same name when present.
+Changing the global language does not clear per-operator choices.
 
 异形屏适配 (`ui/screenFit.js`) persists `sp.pref.screenFit` — four whole pixel offsets `{ l, r, t, b }` in ±100 (inward
 positive; the settings show each as a 0–100 slider, 50 = 0, 2 px a step) — on this device only. While any offset is
@@ -665,6 +674,13 @@ Compact operators may declare `chess.hidden`, explicit `chess.ids.normal/elite`,
 but never enter shops, visible handbook/loadout lists or owned DIY selection. Explicit pair IDs drive upgrades.
 [ASSUMED] Provenance is descriptive only, hiding applies to both forms and both identities, and borrowed voice
 preferences belong to the borrowed bank. Evidence and migration: [0.3.1 history](../history/0.3.1.md).
+
+Compact operator `forms` may additionally name the exact training status (`phase/level/skillLevel/equipLevel`), which
+takes priority over its normal/elite fallback. Existing DATA.md module records and lower-potential annotations pass
+through the same DIY/loadout composition as built-in operators. Official import-only derivation and the main data
+builder share the potential annotator and verify that every potential reconstructs its corresponding official pass;
+full-potential numbers remain unchanged. The installed two collaboration sources keep rank-4 normal skills, rank-7
+elite skills and the tier-5/tier-6 module stages 1/3. Refreshing their source never changes gameplay identity or art.
 
 [ASSUMED] One installed lang plugin may overlay each built-in language, in sorted plugin order; supplied UI/game-text
 keys override and missing/invalid entries retain built-in text. Scope remains browser-local choice, independent of

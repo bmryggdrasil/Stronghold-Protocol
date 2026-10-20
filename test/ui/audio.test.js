@@ -425,6 +425,27 @@ describe('operator battle voice', () => {
     }
   });
 
+  test('JP-only collaboration voice works in both the preview and battle with the default Chinese setting', async () => {
+    const fw = fakeWindow(), originalFetch = globalThis.fetch;
+    const id = 'char_4217_makoto';
+    globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) });
+    const tick = () => new Promise(resolve => setTimeout(resolve, 10));
+    try {
+      const a = new AudioManager({ win: fw.win, getManifest: () => ({ audio: { voiceJp: { [id]: { select: '/jp-select.mp3', place: '/jp-place.mp3' } } } }) });
+      a.install();
+      fw.fire('pointerdown');
+      await tick();
+      assert.equal(a.previewVoice(id), true);
+      await tick();
+      assert.equal(a.voiceNode?.url, '/jp-select.mp3');
+      assert.equal(a.previewVoice(id, 'jp'), true);
+      await tick();
+      assert.equal(a.voice(id, 'place'), true);
+      await tick();
+      assert.equal(a.voiceNode?.url, '/jp-place.mp3');
+    } finally { globalThis.fetch = originalFetch; }
+  });
+
   test('AudioManager.voice: manifest slots (a drawn array), the gate, and the battle events that drive them', async () => {
     const fw = fakeWindow();
     const origFetch = globalThis.fetch;

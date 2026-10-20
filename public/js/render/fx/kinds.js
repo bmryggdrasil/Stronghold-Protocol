@@ -21,7 +21,17 @@ export const FX_KINDS = Object.freeze({
   // position + the previous point + direction); `pt` because it is not at the caster (it roams and passes by her tile)
   chen3Wave: { a: 'qi', c: 0xdfe8ff, pt: true },
   quadShot: { a: 'volley', c: 0xfff2d0 }, featherArrow: { a: 'counter', c: 0xfff2d0 },
+  sonicStream: { a: 'volley', c: 0xff66cc },
   burst: { a: 'element', c: 0xd0a0ff },
+  musicBurst: { a: 'crystal', c: 0xff315f, r: 1.8 },
+  // 结城理 P3R costume / Persona transitions: procedural battle effects, no extracted game particles.
+  makotoPersona: { a: 'makotoPersona', c: 0x6e7be8 }, makotoAllOut: { a: 'makotoAllOut', c: 0xf4e8c6, r: 1.5 },
+  makotoAura: { a: 'healAoe', c: 0xffc56e, r: 1.5 }, makotoFear: { a: 'reticle', c: 0x9f78ed },
+  makotoStagger: { a: 'wave', c: 0x748bea, r: 1.5 }, makotoExecute: { a: 'strike', c: 0xe7ddff },
+  // The notes are rendered from their deterministic sim positions / target changes, not as a generic point effect.
+  oblvnsNote: { a: 'none', c: 0xff66cc },
+  feverStart: { a: 'buff', c: 0xff4bb8, r: 2.5 },
+  stageLight: { a: 'zone', c: 0xf52269, dur: 25, r: 2.5 },
   // areas
   zone: { a: 'zone', c: 0xffb35c, dur: 3 }, healField: { a: 'zone', c: 0x62f08a, dur: 4 }, firewall: { a: 'wall', c: 0xff6a2a, dur: 4 },
   firewallBlock: { a: 'counter', c: 0xff6a2a }, tide: { a: 'zone', c: 0x5fe0ff, dur: 3, r: 2 }, storm: { a: 'zone', c: 0xd8c8a0, dur: 3 },
@@ -112,6 +122,10 @@ export function fxSpec(kind, extra = {}) {
   const k = typeof kind === 'string' ? kind : '';
   if (k === 'phase' && SILENT_PHASES.has(extra && extra.kind)) return { a: 'none', c: 0xffffff };
   let spec = FX_KINDS[k];
+  if (k === 'makotoPersona') {
+    const c = extra?.persona === 'orpheus' ? 0xffc56e : extra?.persona === 'body' ? 0xe6eaf7 : 0x6e7be8;
+    return { ...spec, c };
+  }
   if (!spec) {
     const g = FX_GUESS.find(([re]) => re.test(k));
     spec = g ? { ...FX_KINDS[{ heal: 'heal', shield: 'shield', summon: 'summon', blast: 'aoe', zone: 'zone', buff: 'buff', reticle: 'lock', blink: 'blink', vanish: 'disappear', move: 'displace', wave: 'pulse' }[g[1]]] } : { a: 'generic', c: 0xfff2d0 };

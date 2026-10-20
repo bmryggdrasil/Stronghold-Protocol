@@ -111,6 +111,18 @@ export const skinFor = (charId) => (str(charId) ? (skinsStore.get()[SKINS_KEY] |
 
 // ---- the catalogue (the composed asset manifest) --------------------------------------------------------------
 
+/** A content operator may borrow another operator's art without duplicating its manifest record.
+ * Keep its choice keyed by its own charId, while resolving outfits from the same body the renderer uses.
+ */
+function skinRecord(charId, manifest) {
+  const own = manifest?.chars?.[charId];
+  if (own && !charId.startsWith('char_x_')) return own;
+  const unit = data.get('backups')?.units?.[charId]
+    || Object.values(data.get('chess') || {}).find(rec => rec?.charId === charId);
+  const body = unit?.assets?.spine;
+  return (typeof body === 'string' ? manifest?.chars?.[body] : null) || own || null;
+}
+
 /**
  * Every appearance of an operator the enabled plugins write, plus what the renderer makes of each (docs/SKINS.md).
  *
@@ -129,7 +141,7 @@ export function availableSkins(charId) {
   const id = str(charId);
   if (!id) return [];
   const m = data.get('assets');
-  const rec = m && isObj(m.chars) ? m.chars[id] : null;
+  const rec = m && isObj(m.chars) ? skinRecord(id, m) : null;
   // a record without `skins` still has its own appearance (the 默认 row below), because the picker's global display rule
   // shows the section for an operator the plugins wrote no skin for (hasAnySkinChoices, docs/SKINS.md)
   if (!rec) return [];

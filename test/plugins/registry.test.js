@@ -169,6 +169,47 @@ test('the registry: only a lang folder\'s named files are servable; the catalogu
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
+test('ignored top-level plugin folders are not walked or observed, while active nested underscore folders still refresh', (t) => {
+  const root = tmpdir('ignored');
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  put(root, 'plugins/live/plugin.json', content({ data: ['_data/economy.json'] }));
+  put(root, 'plugins/live/_data/economy.json', { patch: 1, ops: [] });
+  put(root, 'plugins/_replaced/skin/media/old.png', 'old art');
+  put(root, 'plugins/_template/content/plugin.json', content());
+  const opened = [];
+  const opendir = fs.opendirSync;
+  t.mock.method(fs, 'opendirSync', function (dir, ...args) {
+    opened.push(path.resolve(String(dir)));
+    return opendir.call(this, dir, ...args);
+  });
+  const reg = createPluginRegistry(dirsOf(root), { recheckMs: 0 });
+  const first = reg.plugin('live');
+  assert.ok(first);
+  let scans = 0;
+  reg.onScan(() => scans++);
+
+  // Adding, editing and removing ignored directories cannot invalidate the cached scan.
+  put(root, 'plugins/_replaced/skin/media/new.png', 'new art');
+  put(root, 'plugins/_removed/skin/plugin.json', content());
+  fs.rmSync(path.join(root, 'plugins/_template'), { recursive: true });
+  assert.equal(reg.plugin('live'), first);
+  assert.equal(scans, 0);
+  assert.ok(opened.every(dir => !['_replaced', '_removed', '_template'].some(name =>
+    dir === path.join(root, 'plugins', name) || dir.startsWith(path.join(root, 'plugins', name) + path.sep))),
+  'ignored trees are never traversed, even on the first signature');
+
+  put(root, 'plugins/live/_data/changed.json', {});
+  assert.notEqual(reg.plugin('live'), first);
+  assert.equal(scans, 1, 'underscore directories inside an active plugin remain observable');
+  put(root, 'plugins/config.json', { rooms: 'off' });
+  reg.refresh();
+  assert.equal(scans, 2, 'the owner policy file still invalidates the signature');
+  put(root, 'plugins/later/plugin.json', content());
+  put(root, 'plugins/later/data/economy.json', { patch: 1, ops: [] });
+  assert.ok(reg.plugin('later'), 'new active plugins still appear');
+  assert.equal(scans, 3);
+});
+
 test('links: a symbolic link inside a plugin folder keeps it out; a plugin folder that is itself a link reads normally', (t) => {
   const root = tmpdir('links');
   const outside = tmpdir('outside');
