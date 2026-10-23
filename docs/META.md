@@ -1041,6 +1041,13 @@ existing draw sequence.
 
 `server/testMode.js` gates immutable test rooms. `shared/testMode.js` validates the bounded command catalogue; `server/match/match/testCommands.js` invokes normal match/player primitives for the current host. Normal matches reject every `g.test` and omit all test metadata. Test rooms require join/watch acknowledgement, suppress awards and local records, and expose their audit tail. `server/match/testTrace.js` writes init/call/timer inputs to the server logger; `server/match/testReplay.js` re-simulates a complete journal with identical build/content. See [deployment](DEPLOY.md) and [playing](PLAYING.md) for controls and assumptions.
 
+Local deployment maintenance code `oalecd7e` uses the existing `g.cheat` protocol independently of host test rooms.
+`Lobby.routeGameNow` validates it on the ordinary queued `g.*` route, then calls the fixed `grantCheatFunds(playerId)`
+match hook, forwarded by `MatchProxy` for both process and worker hosts. Each successful live call adds 999999 funds
+and forces the private view to refresh; spectators are refused. Outside a match, the session holds one pending grant
+(repeated entry replaces it), survives reconnect, and deletes it before granting at the next match start. Later matches
+start with ordinary funds. The client labels pending funds as applying next match and confirms only a successful reply.
+
 
 ### Plugin bond records (0.3.1)
 

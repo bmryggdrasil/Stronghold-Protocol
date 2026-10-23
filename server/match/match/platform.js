@@ -68,6 +68,17 @@ export class MatchPlatform {
     return OK;
   }
 
+  /** Local maintenance hook, called only after the lobby validates its code; never a client intent. */
+  grantCheatFunds(playerId) {
+    const ps = this.players.get(playerId);
+    if (!ps || ps.isBot || ps.left) return fail(ERR.NOT_IN_ROOM);
+    if (this.disposed || this.ended) return fail(ERR.WRONG_PHASE);
+    if (!ps.alive) return fail(ERR.ELIMINATED);
+    ps.addFunds(999999, { reason: 'cheat' });
+    this.flush(true);
+    return OK;
+  }
+
   /**
    * room.loadout during the match (DESIGN §16): only while INFO_CHECK runs (the briefing's 干员调配 entry); the lobby
    * already checked it against the data (PlayerState.setLoadout re-checks it). `ops` (0.2.2): the per-operator 潜能 /

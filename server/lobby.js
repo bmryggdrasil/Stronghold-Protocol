@@ -1425,20 +1425,21 @@ export class Lobby {
       this.log.info(`[lobby] ${room.code} match #${room.matchCount} starting (${room.mode}/${room.difficulty}, ${seats.length} seats, seed ${seed}${room.test ? ', test' : ''}${modded ? `, content ${room.content.cs.slice(0, 8)}${match.hosted ? ' in its match host' : ''}` : ''})`);
       this.broadcastState(room);
       match.start();
+      const pendingGrants = [];
       for (const s of room.seats) {
         if (s && !s.isBot) {
           const sess = this.registry?.byId ? this.registry.byId(s.playerId) : null;
           if (sess?.pendingCheatFunds) {
-            const ps = match.players?.get?.(s.playerId);
-            if (ps) {
-              ps.addFunds(sess.pendingCheatFunds, { reason: 'cheat' });
-              this.log.info(`[cheat] applied pending infinite gold to ${s.name} (${s.playerId})`);
-            }
+            // Consume before crossing the host boundary: this registration belongs to this match only.
             delete sess.pendingCheatFunds;
+            const granted = this.grantCheatFunds(room, sess);
+            if (granted && typeof granted.then === 'function') pendingGrants.push(granted);
           }
         }
       }
       match.flush?.(true);
+      // The match has already started. A failed maintenance grant is logged separately; it cannot undo room.start.
+      if (pendingGrants.length) return Promise.all(pendingGrants).then(() => OK);
     } catch (e) {
       this.log.error(`[lobby] ${room.code} match failed to start`, e);
       if (room.matchCtx === ctx) { room.match = null; room.matchCtx = null; room.matchKey = null; }
@@ -1610,22 +1611,6 @@ export class Lobby {
    * in a match host (header "Gameplay plugins").
    */
   routeGame(session, msg) {
-    if ((msg.t === 'g.cheat' || msg.t === 'g.oalecd7e') && (msg.code === 'oalecd7e' || msg.text === 'oalecd7e' || msg.t === 'g.oalecd7e')) {
-      const room = this.roomOf(session);
-      if (room && room.match) {
-        const ps = room.match.players?.get?.(session.playerId);
-        if (ps) {
-          ps.addFunds(999999, { reason: 'cheat' });
-          this.log.info(`[cheat] infinite gold granted to ${session.name} (${session.playerId})`);
-          room.match.flush?.(true);
-        }
-        delete session.pendingCheatFunds;
-      } else {
-        session.pendingCheatFunds = 999999;
-        this.log.info(`[cheat] pre-registered pending infinite gold for ${session.name} (${session.playerId})`);
-      }
-      return OK;
-    }
     const room = this.queuedRoom(session);
     return room ? this.serial(room, () => this.routeGameNow(session, msg)) : this.routeGameNow(session, msg);
   }
@@ -1633,6 +1618,19 @@ export class Lobby {
   /** routeGame, now. */
   routeGameNow(session, msg) {
     const room = this.roomOf(session);
+    // onMessage already owns the room queue and routes g.* straight here. Keep the maintenance code on that
+    // shared path, including roomless sessions, and use the match interface for content child/worker hosts.
+    if (msg.t === 'g.cheat' || msg.t === 'g.oalecd7e') {
+      if (msg.code !== 'oalecd7e' && msg.text !== 'oalecd7e' && msg.t !== 'g.oalecd7e') return fail(ERR.BAD_MSG);
+      if (room?.spectatorOf(session.playerId)) return fail(ERR.SPECTATOR);
+      if (room?.match) {
+        delete session.pendingCheatFunds;
+        return this.grantCheatFunds(room, session);
+      }
+      session.pendingCheatFunds = 999999;
+      this.log.info(`[cheat] pre-registered pending infinite gold for ${session.name} (${session.playerId})`);
+      return OK;
+    }
     if (!room) return fail(ERR.NOT_IN_ROOM);
     if (msg.t === 'g.test') {
       if (!this.testEnabled) return fail(ERR.TEST_DISABLED);
@@ -1666,6 +1664,22 @@ export class Lobby {
       return OK;
     }
     return matchAnswer(res);
+  }
+
+  /** A fixed local maintenance grant through the match interface, with the hosted match's actual answer. */
+  grantCheatFunds(room, session) {
+    const answer = result => {
+      const res = result ? matchAnswer(result) : fail(ERR.INTERNAL);
+      if (res.ok) this.log.info(`[cheat] infinite gold granted to ${session.name} (${session.playerId})`);
+      else this.log.error(`[cheat] grant failed for ${session.playerId}: ${res.error}`);
+      return res;
+    };
+    const result = this.callMatch(room, 'grantCheatFunds', session.playerId);
+    if (result && typeof result.then === 'function') return Promise.resolve(result).then(answer, e => {
+      this.log.error(`[cheat] grant failed for ${session.playerId}`, e);
+      return fail(ERR.INTERNAL);
+    });
+    return answer(result);
   }
 
   /** Call an optional match hook without letting it throw. onLeave falls back to onDisconnect. */

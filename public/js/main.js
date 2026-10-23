@@ -446,13 +446,13 @@ async function boot() {
     try {
       const ok = await actions.cheat('oalecd7e');
       if (ok) {
-        toast(t('无限金币已注入！'), 'info');
-      } else {
-        toast(t('测试端口已触发'), 'info');
+        const pending = !store.get().room?.inMatch;
+        toast(`${t('资金')} +999999${pending ? ` · ${t('下一局生效')}` : ''}`, 'info');
       }
-      try { audio.sfx('confirm'); } catch { /* ignore */ }
-    } catch {
-      toast(t('无限金币已注入！'), 'info');
+      return ok;
+    } catch (err) {
+      toastError(err);
+      return false;
     }
   };
   window.oalecd7e = triggerCheat;

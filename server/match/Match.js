@@ -100,6 +100,8 @@
 // setHost(playerId)         The room's host changed (server/lobby.js migrateHost; optional for the platform): the
 //                           current executor of a delegated bot rehearsal (opts.hostId / opts.botRehearsalDelegate) —
 //                           a running task of the previous host falls back to the server, later ones ask the new host.
+// grantCheatFunds(playerId) Local maintenance hook: grants 999999 funds after lobby-only code validation, flushes
+//                           private state and answers OK/error. MatchProxy forwards it to the content host.
 //
 // Bot seats never produce intents or hooks: the match drives bots itself (server/match/bot.js).
 // Messages the match emits are the S2C 'm.*' / 'b.*' frames of DESIGN §8.2 (room.* frames are platform-owned).
