@@ -57,3 +57,28 @@ test('custom operator plugins (op-oblvns and op-makoto) load and play correctly'
   assert.equal(cleaned.picks['chess_char_6_diy1_a']?.charId, 'char_x_op_oblvns_oblvns');
   assert.equal(cleaned.picks['chess_char_6_diy2_a']?.charId, 'char_x_op_makoto_makoto');
 });
+
+test('custom operator plugins also load and resolve kits under 规程·序列Ⅰ (act3autochess@V3_1)', () => {
+  const registry = createPluginRegistry(pluginDirs('.'));
+  const set = buildContentSet({ registry, ids: ['op-oblvns', 'op-makoto'], version: 'act3autochess@V3_1' });
+  assert.deepEqual(set.problems, []);
+  assert.ok(set.cs, 'cs should be computed for act3autochess@V3_1');
+
+  const pool6 = diyPool(6, { data: set.data });
+  assert.ok(pool6.includes('char_x_op_oblvns_oblvns'), 'Sakiko in act3autochess@V3_1 tier 6 diyPool');
+  assert.ok(pool6.includes('char_x_op_makoto_makoto'), 'Makoto in act3autochess@V3_1 tier 6 diyPool');
+
+  const legacyPicks = {
+    'chess_char_6_diy1_a': { charId: 'char_4182_oblvns', skillIndex: 2 },
+    'chess_char_6_diy2_a': { charId: 'char_4217_makoto', skillIndex: 1 },
+  };
+  const cleaned = checkDiyPicks(legacyPicks, { data: set.data, kitted: set.kitted });
+  assert.equal(cleaned.picks['chess_char_6_diy1_a']?.charId, 'char_x_op_oblvns_oblvns');
+  assert.equal(cleaned.picks['chess_char_6_diy2_a']?.charId, 'char_x_op_makoto_makoto');
+
+  const mockBattle = { on() {}, addBuff() {}, after() {}, every() {}, _handlerError(ctx, u, e) { throw e; } };
+  const recOblvns = diyRecord('chess_char_6_diy1_a', { charId: 'char_x_op_oblvns_oblvns', skillIndex: 2 }, { elite: true, data: set.data });
+  const recMakoto = diyRecord('chess_char_6_diy2_a', { charId: 'char_x_op_makoto_makoto', skillIndex: 1 }, { elite: true, data: set.data });
+  assert.equal(setupUnitKit(mockBattle, { uid: 1, kind: 'op', charId: 'char_x_op_oblvns_oblvns', def: recOblvns, mem: {} }).skill?.kind, 'duration');
+  assert.equal(setupUnitKit(mockBattle, { uid: 2, kind: 'op', charId: 'char_x_op_makoto_makoto', def: recMakoto, mem: {} }).skill?.kind, 'instant');
+});

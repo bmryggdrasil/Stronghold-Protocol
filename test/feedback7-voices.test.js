@@ -63,17 +63,19 @@ test('plan: audio.voiceJp is the JP dub (ArknightsAssets2 voice/) of the very sl
   assert.ok(plan({ voiceSlots: null }).audio.voiceJp.char_263_skadi.gacha);
 });
 
-test('data/assets.json: voiceJp gives every CN-voiced operator its JP twins plus JP-only Makoto (193 operators, 2702 files); stand-ins, 盟约·辅助干员 and summons have neither', () => {
+test('data/assets.json: voiceJp gives every voiced operator the JP twin plus JP-only Sakiko & Makoto (247 operators, 3456 files); stand-ins, 盟约·辅助干员 and summons have neither', () => {
   const m = readJson('data/assets.json');
   const cn = m.audio.voice;
   const jp = m.audio.voiceJp;
   assert.ok(jp && typeof jp === 'object', 'the manifest carries the JP tree');
   assert.ok(Object.keys(cn).every((id) => jp[id]), 'every CN voice operator has a JP twin');
-  assert.deepEqual(Object.keys(jp).sort(), [...Object.keys(cn), 'char_4217_makoto'].sort(), 'Makoto has JP voice only');
+  assert.deepEqual(Object.keys(jp).sort(), [...Object.keys(cn), 'char_4182_oblvns', 'char_4217_makoto'].sort(), 'Sakiko and Makoto have JP voice only');
   assert.equal(m.stats.voiceJpChars, Object.keys(jp).length);
   assert.equal(m.stats.voiceChars, Object.keys(cn).length);
-  assert.equal(Object.keys(jp).length, 193);
-  // Shared operators have identical slots and filenames; Makoto's collab mirror supplies JP only.
+  // 192 / 2688 until the online regeneration of 2026-11-03 added the 19 第一期 operators' lines (DESIGN §37.93)
+  // 规程 adds 34 voiced operators; 拜松, like 锡兰, has no 作战中 4 line in the source. +2 plugin references (oblvns, makoto).
+  assert.equal(Object.keys(jp).length, 247);
+  // Shared operators have identical slots and filenames; plugin collab mirrors supply JP only.
   const expectedJp = JSON.parse(JSON.stringify(cn).replaceAll('/assets/audio/voice/cn/', '/assets/audio/voice/jp/'));
   for (const id of Object.keys(cn)) assert.deepEqual(jp[id], expectedJp[id], `${id}: JP twin`);
   assert.equal(voiceLine(m.audio, 'char_4217_makoto', 'start', 'jp', () => 0)?.url, jp.char_4217_makoto.start);
@@ -82,7 +84,7 @@ test('data/assets.json: voiceJp gives every CN-voiced operator its JP twins plus
   const lines = [];
   const walk = (x) => { if (typeof x === 'string') lines.push(x); else if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === 'object') Object.values(x).forEach(walk); };
   walk(jp);
-  assert.equal(lines.length, 2702);
+  assert.equal(lines.length, 3456);
   for (const u of lines) assert.match(u, /^\/assets\/audio\/voice\/jp\/char_[^/]+\/cn_\d+\.mp3$/);
   // no voice: the 17 stand-ins of data/backups.json (预备干员 / 原型干员), the mode's 盟约·辅助干员, every summon
   const backups = readJson('data/backups.json');

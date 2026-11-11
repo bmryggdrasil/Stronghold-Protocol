@@ -5,7 +5,7 @@
 
 import { num, talentBb, traitBb, skillRec, up, installAura, moduleOn } from '../kits/shared/tier1.js';
 import { sortEnemyTargets, canTargetEnemy } from '../../targeting.js';
-import { hasHp } from '../../damage.js';
+import { hasHp } from '../../attack.js';
 import { dirVec } from '../../dir.js';
 import { COLS } from '../../constants.js';
 import { cos, hypot, sin } from '../../detmath.js';

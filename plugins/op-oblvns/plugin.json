@@ -12,6 +12,13 @@
   "version": "1.0.0",
   "app": ">=0.3.0 <0.4.0",
   "api": 1,
+  "versions": [
+    "act2autochess",
+    "act2autochess@V2_1",
+    "act1autochess",
+    "act1autochess@V1_1",
+    "act3autochess@V3_1"
+  ],
   "class": "content",
   "scope": [
     "room"

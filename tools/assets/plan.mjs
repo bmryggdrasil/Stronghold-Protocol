@@ -235,6 +235,8 @@ export function patternOperator(id, x = {}) {
   const skinId = typeof x.skinId === 'string' ? x.skinId : null;
   const skinAssetId = skinId ? skinId.replace('@', '_') : id; // official skin_table avatarId / portraitId convention
   const modelId = skinId ? skinAssetId.replace(/[^A-Za-z0-9._-]/g, '_') : id; // fexli folder stem; '#' is '_'
+  // skin_table.buildinPatchMap: medic Amiya's only default skin is char_1037_amiya3#2.
+  const baseE2 = !skinId && id === 'char_1037_amiya3';
   const sp = (side) => {
     const b = `${RAW.fexli}spine/${id}/${modelId}/${side}/${modelId}`;
     return { skel: `${b}.skel`, atlas: `${b}.atlas`, png: `${b}.png` };
@@ -243,11 +245,11 @@ export function patternOperator(id, x = {}) {
   return {
     name: x.name ?? null, subProfessionId: x.subProfessionId ?? null, nationId: x.nationId ?? null, chess: [],
     avatar: {
-      e0e1: { url: art('avatar', id) },
+      e0e1: { url: skinId ? art('avatar', id) : `${RAW.yuanyan}avatar/${id}${baseE2 ? '_2' : ''}.png` },
       e2: { url: skinId ? art('avatar', id) : `${RAW.yuanyan}avatar/${id}_2.png` },
     },
     portrait: {
-      e0e1: { url: skinId ? art('portrait', id) : `${RAW.yuanyan}portrait/${id}_1.png` },
+      e0e1: { url: skinId ? art('portrait', id) : `${RAW.yuanyan}portrait/${id}_${baseE2 ? '2' : '1'}.png` },
       e2: { url: skinId ? art('portrait', id) : `${RAW.yuanyan}portrait/${id}_2.png` },
     },
     skills: (x.skills || []).map((s) => ({
@@ -448,7 +450,7 @@ export function collectEnemyIds({ assets07, enemies05, maps05, ops03 }) {
 export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsData, charword = null, voiceLang = 'cn',
   voiceJp = true, voiceSlots = VOICE_BATTLE_SLOTS, optionalVoice = false,
   extraEnemyIds = [], extraTokenIds = [], extraHandbook = {}, localEnemySpines = {}, localTokenSpines = {}, extraOperators = {},
-  moduleTypes = [], statsTemplate = [], charModes = null }) {
+  moduleTypes = [], statsTemplate = [], charModes = null, extraBands = {}, extraItems = {}, extraBonds = {} }) {
   const notes = [];
   /** @type {Map<string, any>} */
   const models = new Map();
@@ -497,9 +499,10 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
     const idx0 = skillIdx.get(id) || [0];
     const idx = [...idx0, ...(o.skills || []).map((k) => k.index).filter((i) => Number.isInteger(i) && i >= 0 && !idx0.includes(i)).sort((a, b) => a - b)];
     const c = {};
-    c.avatar = leaf(alt(`char/avatar/${id}.png`, o.avatar?.e0e1?.url, o.avatar?.e0e1?.bytes));
+    const baseE2 = id === 'char_1037_amiya3'; // the default patch skin above, including non-golden chess
+    c.avatar = leaf(alt(`char/avatar/${id}${baseE2 ? '_2' : ''}.png`, o.avatar?.e0e1?.url, o.avatar?.e0e1?.bytes));
     if (o.avatar?.e2?.url) c.avatarE2 = leaf(alt(`char/avatar/${id}_2.png`, o.avatar.e2.url, o.avatar.e2.bytes));
-    c.portrait = leaf(alt(`char/portrait/${id}_1.png`, o.portrait?.e0e1?.url, o.portrait?.e0e1?.bytes));
+    c.portrait = leaf(alt(`char/portrait/${id}_${baseE2 ? '2' : '1'}.png`, o.portrait?.e0e1?.url, o.portrait?.e0e1?.bytes));
     if (o.portrait?.e2?.url) c.portraitE2 = leaf(alt(`char/portrait/${id}_2.png`, o.portrait.e2.url, o.portrait.e2.bytes));
     c.spine = {};
     const front = fexliModel(`op:${id}:front`, 'op', `spine/op/${id}/front/`, o.battleSpine?.front, idx);
@@ -696,8 +699,17 @@ export function buildPlan({ assets07, ops03, enemies05, maps05, audio, modelsDat
   }
   const items = {};
   for (const [trapId, it] of Object.entries(assets07?.items || {})) items[trapId] = leaf(alt(`item/${trapId}.png`, it.icon?.url, it.icon?.bytes));
+  for (const [id, b] of Object.entries(extraBonds)) if (!bonds[id] && b.iconId) {
+    bonds[id] = leaf(alt(`bond/${id}.png`, joinUrl(RAW.aa2, `ui/autochess/[uc]autochesscommon/arts/bondicon/${b.iconId.toLowerCase()}.png`)));
+  }
+  for (const id of Object.keys(extraItems)) if (!items[id]) {
+    items[id] = leaf(alt(`item/${id}.png`, joinUrl(RAW.aa2, `ui/autochess/[uc]autochesscommon/arts/shopitemicon/${id}.png`)));
+  }
   const bands = {};
   for (const [bandId, b] of Object.entries(assets07?.bands || {})) bands[bandId] = leaf(alt(`band/${bandId}.png`, b.icon?.url, b.icon?.bytes));
+  for (const [bandId, b] of Object.entries(extraBands)) if (!bands[bandId] && b.iconId) {
+    bands[bandId] = leaf(alt(`band/${bandId}.png`, joinUrl(RAW.aa2, `ui/autochess/[uc]autochesscommon/arts/bandicon/${b.iconId}.png`)));
+  }
 
   // --- professions ----------------------------------------------------------
   const prof = { icon: {}, large: {}, battlecard: {}, sub: {} };

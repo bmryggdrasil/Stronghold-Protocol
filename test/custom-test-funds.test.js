@@ -132,3 +132,36 @@ test('the fixed grant hook rejects absent, bot, left, eliminated and ended seats
   m.ended = true; assert.equal(m.grantCheatFunds(ps.playerId).error, 'WRONG_PHASE'); m.ended = false;
   assert.equal(ps.funds, 0);
 });
+
+for (const withCustomOps of [false, true]) {
+  test(`oalecd7e over WebSocket in 规程·序列Ⅰ (act3autochess@V3_1, ${withCustomOps ? 'with op-oblvns/op-makoto' : 'vanilla version host'})`, { timeout: 60000 }, async t => {
+    const srv = await startServer({ port: 0, host: '127.0.0.1', quiet: true, assetIndex: false, studio: false,
+      matchHost: { transport: 'worker', matchOptions: { botRehearsal: 0 } } });
+    const clients = [];
+    t.after(async () => { await Promise.all(clients.map(c => c.terminate())); await srv.close(); });
+    const connect = async token => {
+      const c = await TestClient.connect(srv.url.replace('http', 'ws') + '/ws'); clients.push(c);
+      const w = await c.hello('V3_1 probe', token); return { c, w };
+    };
+    const request = async (c, msg) => { const r = await c.request(msg, 10000); assert.equal(r.t, 'ok', JSON.stringify(r)); };
+    const { c, w } = await connect();
+    await request(c, { t: 'g.cheat', code: 'oalecd7e' });
+    await request(c, { t: 'room.create', mode: 'coop', difficulty: 'NORMAL', version: 'act3autochess@V3_1' });
+    const state = await c.waitFor('room.state', s => s.hostId === w.playerId);
+    const room = srv.lobby.rooms.get(state.code);
+    if (withCustomOps) {
+      await request(c, { t: 'room.setPlugins', plugins: [{ id: 'op-oblvns' }, { id: 'op-makoto' }] });
+    }
+    await request(c, { t: 'room.contentReady', cs: room.content.cs });
+    await request(c, { t: 'room.start' });
+    assert.equal((await c.waitFor('m.private', s => s.funds === 999999, 10000)).funds, 999999);
+    await request(c, { t: 'g.cheat', code: 'oalecd7e' });
+    assert.equal((await c.waitFor('m.private', s => s.funds === 1999998, 10000)).funds, 1999998);
+    await room.match._request('finish', [{ victory: false, reason: 'test' }]);
+    await c.waitFor('room.state', s => s.code === state.code && !s.inMatch);
+    await request(c, { t: 'room.contentReady', cs: room.content.cs });
+    c.clearInbox();
+    await request(c, { t: 'room.start' });
+    assert.equal((await c.waitFor('m.private', () => true, 10000)).funds, 0);
+  });
+}

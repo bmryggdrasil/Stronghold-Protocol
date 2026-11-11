@@ -65,7 +65,7 @@ import { Downloader } from './assets/downloader.mjs';
 import { restartForEnvProxy } from './assets/env-proxy.mjs';
 import { MirrorPolicy, selectDownloadSource, validateSource } from './assets/network.mjs';
 import { normalizeProxyPrefix } from './assets/sources.mjs';
-import { loadIndexes } from './assets/cache.mjs';
+import { loadIndexes, localFxIndexPath } from './assets/cache.mjs';
 import { indexAudio, VOICE_DIRS } from './assets/audio.mjs';
 import { buildPlan, charModesFromIndex, onlyOperatorPlan, VOICE_OPTIONAL_TREES } from './assets/plan.mjs';
 import { installedArtReferences } from '../server/plugins/artReferences.js';
@@ -79,6 +79,7 @@ import { fontJobs, buildFonts } from './assets/fonts.mjs';
 import { statsTemplateJobs } from './assets/stats-template.mjs';
 import { skelParserAvailable } from './assets/skel.mjs';
 import { SourceVerifier } from './assets/source-verifier.mjs';
+import { versionAssetData, presentationUnion, addManifestEntries, versionAudioData } from './assets/versions.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = join(ROOT, 'public', 'assets');
@@ -439,10 +440,11 @@ async function main() {
   const network = { source, proxyPrefix, mirrorPolicy, verifier };
   await preparePluginOfficialTables(ROOT, { ...network, offline: opts.offline, check: opts.dryRun, refresh: opts.refreshIndex, log });
   const { audioData, modelsData, charword } = await loadIndexes(ROOT, { refresh: opts.refreshIndex && !opts.offline, offline: opts.offline, log, ...network });
-  const audio = indexAudio(audioData);
+  // Verified runs plan only from their verified index; the optional pinned local cache has no verifier ledger.
+  const audio = indexAudio(opts.sourceSnapshot ? audioData : versionAudioData(ROOT, audioData));
   // Skill attack slots follow each operator's mode list when the local fx index is on disk (#679). It is a client
   // extract (public/assets is not in git); without it the plan keeps the filename-letter fallback.
-  const fxIndexPath = join(ROOT, 'public', 'assets', 'local', 'fx', 'index.json');
+  const fxIndexPath = localFxIndexPath(ROOT);
   let charModes = null;
   if (existsSync(fxIndexPath)) {
     const fxIndex = JSON.parse(await readFile(fxIndexPath, 'utf8'));
@@ -453,14 +455,16 @@ async function main() {
   }
   // The game data built by tools/build-data.mjs (when present) may reference more
   // spawnable enemies/tokens than research lists (e.g. 机变 enemy swaps): cover them too.
-  const [dataEnemies, dataTokens, dataBosses, dataBackups, dataChess] = await Promise.all(
-    ['data/enemies.json', 'data/tokens.json', 'data/bosses.json', 'data/backups.json', 'data/chess.json'].map((f) => readJson(f).catch(() => null)));
-  const extras = dataExtras(dataBackups, dataChess);
+  const versionSets = versionAssetData(ROOT);
+  const all = presentationUnion(versionSets);
   const pluginOperators = await pluginOperatorExtras(ROOT);
-  Object.assign(extras.extraOperators, pluginOperators);
+  Object.assign(all.operators, pluginOperators);
   if (Object.keys(pluginOperators).length) log(`[plugins] official art/audio references: ${Object.keys(pluginOperators).join(', ')}`);
+  log(`[versions] planning presentation for ${versionSets.length} official versions`);
   const extraHandbook = {};
-  for (const b of Object.values(dataBosses || {})) if (b?.enemyKey && typeof b.handbookId === 'string') extraHandbook[b.enemyKey] = b.handbookId;
+  for (const d of versionSets) for (const b of Object.values(d.bosses || {})) {
+    if (b?.enemyKey && typeof b.handbookId === 'string') extraHandbook[b.enemyKey] ??= b.handbookId;
+  }
   const localEnemySpines = await syncLocalSpines(opts, 'enemy');
   const localTokenSpines = await syncLocalSpines(opts, 'token');
   const statsTemplate = await statsTemplateJobs(ROOT, { offline: opts.offline || opts.dryRun, log });
@@ -469,17 +473,20 @@ async function main() {
     // default: only the slots a battle can play (plan.mjs VOICE_BATTLE_SLOTS); --voice-all takes the whole official set
     voiceSlots: opts.voiceAll ? null : undefined,
     optionalVoice: opts.optionalVoice,
-    extraEnemyIds: Object.keys(dataEnemies || {}),
-    extraTokenIds: [...Object.keys(dataTokens || {}), ...extras.tokenIds],
+    extraEnemyIds: Object.keys(all.enemies),
+    extraTokenIds: Object.keys(all.tokens),
     extraHandbook,
     localEnemySpines,
     localTokenSpines,
-    extraOperators: extras.extraOperators,
-    moduleTypes: extras.moduleTypes,
+    extraOperators: all.operators,
+    extraBands: all.bands,
+    extraItems: all.items,
+    extraBonds: all.bonds,
+    moduleTypes: all.moduleTypes,
     statsTemplate,
     charModes,
   });
-  if (opts.onlyOperator) plan = onlyOperatorPlan(plan, opts.onlyOperator, extras.extraOperators[opts.onlyOperator]?.subProfessionId);
+  if (opts.onlyOperator) plan = onlyOperatorPlan(plan, opts.onlyOperator, all.operators[opts.onlyOperator]?.subProfessionId);
   const leaves = collectLeaves(plan.template);
   log(`[plan] ${leaves.length} files + ${plan.models.size} Spine models ` +
     `(${Object.keys(plan.template.chars).length} chars, ${Object.keys(plan.template.enemies).length} enemies, ` +
@@ -543,12 +550,18 @@ async function main() {
   body.fonts = (opts.addOnly || opts.onlyOperator) && current?.fonts ? current.fonts
     : (verifier ? fonts.css : existsSync(join(FONTS, 'fonts.css'))) ? { css: '/fonts/fonts.css', faces: fontFaces } : { faces: fontFaces };
   if (opts.onlyOperator && current) body = mergeOperatorManifest(current, body, opts.onlyOperator);
-  const publishedFiles = new Set(resolved.files);
-  const collectPublished = value => {
-    if (typeof value === 'string' && value.startsWith('/assets/')) publishedFiles.add(value.slice('/assets/'.length));
-    else if (value && typeof value === 'object') for (const item of Object.values(value)) collectPublished(item);
-  };
-  if (opts.onlyOperator) collectPublished(body);
+  else if (opts.addOnly && current) {
+    const { version, hash, generator, stats, ...previous } = current;
+    body = addManifestEntries(previous, body);
+  }
+  if (opts.onlyOperator || opts.addOnly) {
+    const files = (v) => {
+      if (typeof v === 'string' && v.startsWith('/assets/')) resolved.files.add(v.slice('/assets/'.length));
+      else if (v && typeof v === 'object') for (const x of Object.values(v)) files(x);
+    };
+    files(body);
+  }
+  const publishedFiles = resolved.files;
   const bytes = totalBytes(ASSETS, publishedFiles);
   const manifest = {
     version: MANIFEST_VERSION,
@@ -564,7 +577,7 @@ async function main() {
   const orphans = opts.onlyOperator ? [] : orphanFiles(await listFiles(ASSETS), new Set([...resolved.files, ...dl.preserved]));
   if (opts.prune) for (const r of orphans) { try { await unlink(join(ASSETS, r)); } catch { /* ignore */ } }
 
-  const charIds = opts.onlyOperator ? [opts.onlyOperator] : [...new Set([...Object.keys(assets07.operators || {}), ...Object.keys(pluginOperators)])];
+  const charIds = opts.onlyOperator ? [opts.onlyOperator] : Object.keys(plan.template.chars);
   const required = requiredMisses(manifest, charIds);
   // Leaves the plan had resolved and the manifest loses here (no alternative of theirs on disk): reported on their own
   // line below and kept in the report, whether or not they shrink the committed manifest.

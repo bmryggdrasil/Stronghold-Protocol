@@ -13,22 +13,26 @@
 // bonds are off (gameLogic diyBannedPieces; 0.2.0). The blocks are hookless (unit-tested by calling them): the 核心盟约 /
 // 附加盟约 rows of bond discs —
 // greyed with the ✕, the red banned-member badge, the briefingBondTip tooltip — the legend and the 本局禁用干员 grid.
-// MatchInfoDialog shows the same blocks read-only in a components.js Modal (关闭, a tap outside or Esc close it) with a
-// status line from its caller (the draft's turn and countdown, so the running clock stays in view).
+// MatchInfoDialog shows the same blocks and the caller's enemy information read-only in a components.js Modal
+// (关闭, a tap outside or Esc close it) with a status line (the draft's turn and countdown stays in view).
 // Styles: css/screens/briefing.css (.brief-*), css/screens/draft.css (.minfo-dlg).
 
-import { html, Button, Icon, MicroLabel, BondDisc, Tooltip, Modal } from './components.js';
+import { useRef } from '../../vendor/hooks.module.js';
+import { html, Button, Icon, MicroLabel, BondDisc, Tooltip, Modal, useModalFocus } from './components.js';
+import { BondPopup } from './bondStrip.js';
 import { UnitThumb } from './gameComponents.js';
 import { bannedPerBond, disabledBondSets, briefingBondTip, diyBannedPieces } from './gameLogic.js';
 import { bondIconUrl } from './assetUrls.js';
 import { data } from '../data.js';
-import { t, dn } from '../../../shared/i18n.js';
+import { BOND_GROUP_HINT, REGULATION_BOND_LEGEND } from './gameLogic/bonds.js';
+import { t, dn, N_ } from '../../../shared/i18n.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
 
 /**
  * @typedef {{ sets: { drawn: Set<string>, off: Set<string> }, stateOf: (bondId: string) => 'off'|'drawn'|null,
  *   bonds: any[], core: any[], addon: any[], banned: string[], perBond: Map<string, number>,
+ *   regulation: boolean, choice: { groups: string[][], picked: number|null }|null,
  *   diyBanned: Array<{ slotId: string, charId: string, name: string }> }} MatchInfoModel
  */
 
@@ -52,6 +56,7 @@ export function matchInfoModel(pub, { bonds = [], chess = () => null, mode = nul
   const banned = (Array.isArray(pub?.bannedChess) ? pub.bannedChess : []).filter((id) => typeof id === 'string' && !!chess(id))
     .sort((a, b) => tierOf(a) - tierOf(b));
   return {
+    regulation: pub?.bondDraw === 'regulation', choice: pub?.bondChoice ?? null,
     sets, stateOf, bonds: list, core: list.filter((b) => b.isCore), addon: list.filter((b) => !b.isCore),
     banned, perBond: bannedPerBond(list, banned),
     diyBanned: priv && diyData ? diyBannedPieces(priv, chess, diyData) : [],
@@ -66,7 +71,7 @@ export function DiyBannedLine({ model, class: cls = 'brief-banned__diy' }) {
   const list = model?.diyBanned || [];
   if (!list.length) return null;
   return html`<p class=${cls} data-testid="diy-banned"><span class="diybanned__tag">${t('自选')}</span>
-    ${t('{names}的盟约本局全部禁用，不会出现在你的商店', { names: list.map((x) => dn(x.name)) })}</p>`;
+    ${t(model.regulation ? N_('{names}因本局盟约随机结果无法出现在你的商店') : N_('{names}的盟约本局全部禁用，不会出现在你的商店'), { names: list.map((x) => dn(x.name)) })}</p>`;
 }
 
 /**
@@ -84,7 +89,7 @@ function BondBannedAside(bond, model, banned) {
       const c = data.lookup('chess', id);
       const bonds = (Array.isArray(c?.bonds) ? c.bonds : []).filter((b) => nameOf.has(b));
       return html`<div key=${id} class="brief-bantip__op" data-chess=${id}>
-        <${UnitThumb} kind="chess" id=${id} size="xs" showTier=${false} />
+        <${UnitThumb} kind="chess" ownerId=${null} id=${id} size="xs" showTier=${false} />
         <div class="brief-bantip__txt"><b>${c?.name || id}</b>
           <span>${bonds.map((b, i) => html`${i ? ' · ' : ''}<span class=${cx(b === bond.bondId && 'is-this')}>${nameOf.get(b)}</span>`)}</span></div>
       </div>`;
@@ -96,9 +101,9 @@ function BondBannedAside(bond, model, banned) {
  * One row of bond discs (核心盟约 / 附加盟约): a greyed disc (✕) for a bond in the drawn set D or one the mode never
  * activates, the red badge with its banned members, a red ring on an enabled bond that lost members; the tooltip says
  * which (briefingBondTip). A bond with banned members lists them in a second box beside the tooltip (BondBannedAside).
- * @param {{ title: string, micro: string, bonds: any[], model: MatchInfoModel }} props
+ * @param {{ title: string, micro: string, bonds: any[], model: MatchInfoModel, onBond?: (id:string)=>void }} props
  */
-export function MatchBondRow({ title, micro, bonds, model }) {
+export function MatchBondRow({ title, micro, bonds, model, onBond }) {
   const m = data.get('assets');
   const banned = new Set(model.banned);
   return html`<div class="brief-bonds">
@@ -108,11 +113,11 @@ export function MatchBondRow({ title, micro, bonds, model }) {
         const state = model.stateOf(b.bondId);
         const off = !!state;
         const bannedN = model.perBond.get(b.bondId) || 0;
-        return html`<${Tooltip} key=${b.bondId} text=${briefingBondTip(b.name, state, bannedN)}
+        return html`<${Tooltip} key=${b.bondId} text=${briefingBondTip(b.name, state, bannedN, model.regulation && b.isCore)}
           aside=${bannedN > 0 ? BondBannedAside(b, model, banned) : null}>
           <div class=${cx('brief-bond', off && 'is-off', state === 'drawn' && 'is-incomplete', !off && bannedN > 0 && 'is-partial')} data-bond=${b.bondId}>
             <${BondDisc} name=${b.name} icon=${bondIconUrl(m, b.bondId)} active=${!off} disabled=${off} tier=${off ? 0 : (b.thresholds?.length || 1)}
-              maxTier=${Math.max(1, b.thresholds?.length || 1)} size="md" />
+              maxTier=${Math.max(1, b.thresholds?.length || 1)} size="md" onClick=${onBond ? () => onBond(b.bondId) : undefined} />
             ${bannedN > 0 ? html`<span class="brief-bond__ban num"><${Icon} name="user" />${bannedN}</span>` : null}
           </div>
         <//>`;
@@ -122,11 +127,43 @@ export function MatchBondRow({ title, micro, bonds, model }) {
 }
 
 /**
+ * A regulation core this match has greyed: the mode never activates it, or the draw left it out (the group that
+ * lost, or multi's grey half). Its operators cannot appear. False before a solo pick greys either group, and false
+ * for an add-on or for covenant data (`bondDraw` is the season rule, not a bond id).
+ * @param {MatchInfoModel|null|undefined} model
+ * @param {string|null|undefined} bondId
+ */
+export function regulationCoreAbsent(model, bondId) {
+  if (!model?.regulation || typeof bondId !== 'string') return false;
+  const bond = model.bonds.find((b) => b && b.bondId === bondId);
+  return !!bond?.isCore && !!model.stateOf(bondId);
+}
+
+/** Solo regulation's two groups; after the pick, or without a choice, the ordinary core row. `onBond` opens the card from every disc. */
+export function MatchBondGroups({ model, onPick, onBond, disabled = false, busy = false }) {
+  if (!model.choice || model.choice.picked !== null) {
+    return html`<${MatchBondRow} title=${t('核心盟约')} micro="CORE BONDS" bonds=${model.core} model=${model} onBond=${onBond} />`;
+  }
+  const grouped = new Set(model.choice.groups.flat());
+  const rest = model.core.filter(b => !grouped.has(b.bondId));
+  return html`<div class="brief-bond-groups" data-testid="bond-groups">
+    <p class="brief-bond-groups__hint">${t(BOND_GROUP_HINT)}</p>
+    ${model.choice.groups.map((ids, idx) => html`<div class="brief-bond-group" key=${idx}>
+      <${MatchBondRow} title=${t(N_('第 {n} 组'), { n: idx + 1 })} micro="CORE BONDS"
+        bonds=${ids.map(id => model.core.find(b => b.bondId === id)).filter(Boolean)} model=${model} onBond=${onBond} />
+      <${Button} variant="primary" disabled=${disabled || busy} loading=${busy} data-testid=${`bond-group-${idx}`}
+        onClick=${() => onPick(idx)}>${t(N_('激活第 {n} 组'), { n: idx + 1 })}<//>
+    </div>`)}
+    ${rest.length ? html`<${MatchBondRow} title=${t('核心盟约')} micro="CORE BONDS" bonds=${rest} model=${model} onBond=${onBond} />` : null}
+  </div>`;
+}
+
+/**
  * The legend under the bond rows ("或本模式禁用" only when the mode switches bonds off).
  * @param {{ model: MatchInfoModel }} props
  */
 export function MatchLegend({ model }) {
-  return html`<p class="brief-legend"><span class="brief-legend__off"></span>${t('灰色：部分盟约所含干员阵容不完整（仍可通过其他盟约的干员或装备激活）')}${model.sets.off.size ? t('，或本模式禁用') : ''} · <span class="brief-legend__ban"><${Icon} name="user" /></span>${t('该盟约中无法出现的干员数')}</p>`;
+  return html`<p class="brief-legend"><span class="brief-legend__off"></span>${t(model.regulation ? REGULATION_BOND_LEGEND : N_('灰色：部分盟约所含干员阵容不完整（仍可通过其他盟约的干员或装备激活）'))}${model.sets.off.size ? t('，或本模式禁用') : ''} · <span class="brief-legend__ban"><${Icon} name="user" /></span>${t('该盟约中无法出现的干员数')}</p>`;
 }
 
 /**
@@ -138,7 +175,7 @@ export function BannedOperators({ model }) {
   return html`<div class="brief-banned">
     <h3 class="brief-h"><span>${t('本局禁用干员')}</span><${MicroLabel}>BANNED OPERATORS</${MicroLabel}><b class="num brief-banned__n">${banned.length}</b></h3>
     ${banned.length ? html`<div class="brief-banned__grid">
-      ${banned.map((id) => html`<${UnitThumb} key=${id} kind="chess" id=${id} size="sm" dim=${true} />`)}
+      ${banned.map((id) => html`<${UnitThumb} key=${id} kind="chess" ownerId=${null} id=${id} size="sm" dim=${true} />`)}
     </div>` : html`<p class="t-dim">${t('本局没有禁用干员')}</p>`}
     <${DiyBannedLine} model=${model} />
   </div>`;
@@ -146,24 +183,44 @@ export function BannedOperators({ model }) {
 
 /**
  * The briefing's bonds and banned operators: 核心盟约, 附加盟约, the legend, 本局禁用干员.
- * @param {{ model: MatchInfoModel }} props
+ * @param {{ model: MatchInfoModel, onBond?: (id:string)=>void }} props
  */
-export function MatchInfo({ model }) {
-  return html`<${MatchBondRow} title=${t('核心盟约')} micro="CORE BONDS" bonds=${model.core} model=${model} />
-    <${MatchBondRow} title=${t('附加盟约')} micro="ADD-ON BONDS" bonds=${model.addon} model=${model} />
+export function MatchInfo({ model, onBond }) {
+  return html`<${MatchBondRow} title=${t('核心盟约')} micro="CORE BONDS" bonds=${model.core} model=${model} onBond=${onBond} />
+    <${MatchBondRow} title=${t('附加盟约')} micro="ADD-ON BONDS" bonds=${model.addon} model=${model} onBond=${onBond} />
     <${MatchLegend} model=${model} />
     <${BannedOperators} model=${model} />`;
 }
 
 /**
  * The read-only match-info dialog (the strategy draft's 本局信息): MatchInfo in a Modal that 关闭, a tap outside or Esc
- * closes. `status` (the caller's line, e.g. the draft's turn and countdown) sits left of 关闭.
- * @param {{ open: boolean, onClose: Function, model: MatchInfoModel|null, status?: any }} props
+ * closes. `enemies` is the shared briefing enemy block; `status` (e.g. the draft's turn and countdown) sits left of 关闭.
+ * @param {{ open: boolean, onClose: Function, model: MatchInfoModel|null, enemies?: any, status?: any, onBond?: (id:string)=>void }} props
  */
-export function MatchInfoDialog({ open, onClose, model, status = null }) {
-  return html`<${Modal} open=${open && !!model} onClose=${onClose} title=${t('本局信息')} micro="MATCH INFO // BONDS & BANNED OPERATORS" class="minfo-dlg"
+export function MatchInfoDialog({ open, onClose, model, enemies = null, status = null, onBond }) {
+  return html`<${Modal} open=${open && !!model} onClose=${onClose} title=${t('本局信息')} micro="MATCH INFO" class="minfo-dlg"
     actions=${html`${status ? html`<div class="minfo-dlg__status" data-testid="match-info-status">${status}</div>` : null}
       <${Button} variant="secondary" icon="close" data-autofocus data-testid="match-info-close" onClick=${onClose}>${t('关闭')}<//>`}>
-    ${open && model ? html`<${MatchInfo} model=${model} />` : null}
+    ${open && model ? html`<div class=${cx('minfo-dlg__content', enemies && 'has-enemies')}>
+      ${enemies ? html`<section class="minfo-dlg__enemies">${enemies}</section>` : null}
+      <section class="minfo-dlg__bonds"><${MatchInfo} model=${model} onBond=${onBond} /></section>
+    </div>` : null}
   <//>`;
+}
+
+/** The existing bond card above match information, with nested Escape/focus handling (#915).
+ * Preparation callers omit onMember: the member grid stays informational until the battle detail panel is available.
+ * @param {{ bondId: string|null, onClose: Function, entry?: any, priv?: any, banned?: string[], off?: boolean,
+ *   owner?: string|null, ownerId?: string|null, morphMode?: string, onMember?: (id:string, items?:string[]|null, standInFor?:string|null, diy?:any)=>void }} props
+ */
+export function MatchBondDialog({ bondId, onClose, ...props }) {
+  const box = useRef(null);
+  useModalFocus(!!bondId, onClose, box);
+  if (!bondId) return null;
+  return html`<div class="modal match-bond-modal" role="presentation"
+    onMouseDown=${e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div ref=${box} class="match-bond-dialog" tabindex="-1">
+      <${BondPopup} bondId=${bondId} onClose=${onClose} modal=${true} ...${props} />
+    </div>
+  </div>`;
 }

@@ -29,9 +29,9 @@
 
 import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Icon, HexBadge, TierChip, Tooltip, MicroLabel } from './components.js';
-import { Img, BondGlyph, CoinGlyph, GIcon, RichText } from './gameComponents.js';
+import { OperatorImage, Img, BondGlyph, CoinGlyph, GIcon, RichText } from './gameComponents.js';
 import { priceTone, mergeProgress, mergeTarget, shopBlockReason, chessLoadout, offerHeader, briefingBondTip, ownStandIn, standInLoadout, standInLabel, standInTip, standInForText, ownDiyRecord, diyGetter } from './gameLogic.js';
-import { chessPortraitUrl, itemIconUrl, profIconUrl, uiUrl, skillIconUrl, skillRecordIconUrl, moduleTypeIconUrl } from './assetUrls.js';
+import { itemIconUrl, profIconUrl, uiUrl, skillIconUrl, skillRecordIconUrl, moduleTypeIconUrl } from './assetUrls.js';
 import { data } from '../data.js';
 import { hotkeyLabelOf } from './settings.js';
 import { t } from '../../../shared/i18n.js';
@@ -105,7 +105,7 @@ export function ChessCard({ slot, idx, priv, frozen = false, reason = null, free
       aria-label=${`${t('{name}，价格 {price}', { name, price: slot.price })}${armed ? (disabled ? t('，无法购买') : t('，再次点击确认')) : ''}`} aria-pressed=${onTap ? String(!!armed) : undefined}>
     <span class="scard__bg" aria-hidden="true"></span>
     <span class="scard__water" aria-hidden="true">${bonds[0] ? html`<${BondGlyph} bondId=${bonds[0]} />` : null}</span>
-    <${Img} src=${chessPortraitUrl(m, c)} class="scard__art" />
+    <${OperatorImage} m=${m} chess=${c} portrait ownerId=${priv?.playerId} class="scard__art" />
     <span class="scard__top">
       <${TierChip} tier=${tier} size="md" />
       <${PriceHex} slot=${slot} free=${free} poor=${reason === t('资金不足')} />
@@ -282,7 +282,7 @@ export function RewardCards({ offer, priv, editable, onPick, onDetail, onLater, 
       ${offer.slots.map((s, i) => {
         if (!s || s.sold) return html`<div key=${`rw${i}`} class=${cx('scard', 'scard--sold', s && s.kind === 'item' && 'scard--item')}><span class="scard__soldtxt"><span>${t('已选择')}</span></span></div>`;
         const kind = s.kind === 'item' ? 'item' : 'chess';
-        const reason = shopBlockReason('reward', { priv, editable, slot: s, ...LOOKUPS });
+        const reason = shopBlockReason('reward', { config: data.get('config'), priv, editable, slot: s, ...LOOKUPS });
         const props = { slot: { ...s, price: 0 }, idx: i, free: true, reason, armed: armed === armKey('r', i, s), onBuy: onPick, onDetail,
           onTap: (idx) => onTap('r', idx, s, kind, reason, onPick) };
         return kind === 'item' ? html`<${ItemCard} key=${`rw${i}:${s.id}`} ...${props} />` : html`<${ChessCard} key=${`rw${i}:${s.id}`} priv=${priv} offBonds=${offBonds} ...${props} />`;
@@ -303,14 +303,19 @@ export function ShopBar({ priv, editable, collapsed, refreshBusy = false, onColl
   reward = null, onReward, onRewardLater, onArm = null, offBonds = null }) {
   const shop = priv?.shop || {};
   const slots = Array.isArray(shop.slots) ? shop.slots : [];
-  const chessSlots = slots.map((s, i) => ({ s, i })).filter(({ s }) => !s || s.kind !== 'item');
-  const itemSlots = slots.map((s, i) => ({ s, i })).filter(({ s }) => s && s.kind === 'item');
+  // Empty slots have no kind. In 第一期 the first equipment slot opens empty at level 5; use the server's layout
+  // to keep it in the equipment column. [ASSUMED] Older saved frames / mocks infer kinds from their cards;
+  // their null slots carry no information from which to recover the old equipment position.
+  const layout = Number.isInteger(shop.layout?.chess) && Number.isInteger(shop.layout?.item) ? shop.layout : null;
+  const indexed = slots.map((s, i) => ({ s, i }));
+  const chessSlots = indexed.filter(({ s, i }) => layout ? i < layout.chess : !s || s.kind !== 'item');
+  const itemSlots = indexed.filter(({ s, i }) => layout ? i >= layout.chess && i < layout.chess + layout.item : s && s.kind === 'item');
   const frozen = !!shop.frozen;
   const funds = Number(priv?.funds) || 0;
   const remaining = Math.max(0, (priv?.deployCap ?? 8) - (priv?.deployCount ?? 0));
-  const lvReason = shopBlockReason('levelUp', { priv, editable });
-  const refReason = shopBlockReason('refresh', { priv, editable });
-  const frzReason = editable ? null : shopBlockReason('freeze', { priv, editable });
+  const lvReason = shopBlockReason('levelUp', { config: data.get('config'), priv, editable });
+  const refReason = shopBlockReason('refresh', { config: data.get('config'), priv, editable });
+  const frzReason = editable ? null : shopBlockReason('freeze', { config: data.get('config'), priv, editable });
   const free = Number(shop.freeRefreshes) || 0;
   const showReward = !!(reward && Array.isArray(reward.slots) && reward.slots.length);
 
@@ -377,7 +382,7 @@ export function ShopBar({ priv, editable, collapsed, refreshBusy = false, onColl
         ${chessSlots.map(({ s, i }) => {
           if (!s) return html`<${EmptyCard} key=${`e${i}`} />`;
           if (s.sold) return html`<${SoldCard} key=${`s${i}`} />`;
-          const reason = shopBlockReason('buy', { priv, editable, slot: s, ...LOOKUPS });
+          const reason = shopBlockReason('buy', { config: data.get('config'), priv, editable, slot: s, ...LOOKUPS });
           return html`<${ChessCard} key=${`c${i}:${s.id}`} slot=${s} idx=${i} priv=${priv} frozen=${slotFrozen(s, frozen)} onBuy=${onBuy} onDetail=${onDetail} offBonds=${offBonds}
               reason=${reason} armed=${armed === armKey('c', i, s)} onTap=${editable ? (idx) => tapCard('c', idx, s, 'chess', reason, onBuy) : null} />`;
         })}
@@ -385,12 +390,13 @@ export function ShopBar({ priv, editable, collapsed, refreshBusy = false, onColl
       ${showReward ? null : html`<div class="shopbar__item">
         ${itemSlots.length
           ? itemSlots.map(({ s, i }) => {
+            if (!s) return html`<${EmptyCard} key=${`ie${i}`} item=${true} />`;
             if (s.sold) return html`<${SoldCard} key=${`is${i}`} item=${true} />`;
-            const reason = shopBlockReason('buy', { priv, editable, slot: s, ...LOOKUPS });
+            const reason = shopBlockReason('buy', { config: data.get('config'), priv, editable, slot: s, ...LOOKUPS });
             return html`<${ItemCard} key=${`i${i}:${s.id}`} slot=${s} idx=${i} frozen=${slotFrozen(s, frozen)} onBuy=${onBuy} onDetail=${onDetail} reason=${reason}
               armed=${armed === armKey('i', i, s)} onTap=${editable ? (idx) => tapCard('i', idx, s, 'item', reason, onBuy) : null} />`;
           })
-          : html`<${SoldCard} item=${true} />`}
+          : layout?.item === 0 ? null : html`<${EmptyCard} item=${true} />`}
       </div>`}
       <div class="funds">
         <div class="funds__hex">

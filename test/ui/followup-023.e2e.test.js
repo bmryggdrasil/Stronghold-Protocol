@@ -1,4 +1,5 @@
 // Real browser / server checks for local identity recovery, per-operator voice, install offers and large text.
+import { seedReleaseRead } from '../helpers/releaseNotes.js';
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
@@ -19,6 +20,7 @@ describe('0.2.3 follow-up client features', { skip: !ENABLED }, () => {
     await page.setViewport({ width: phone ? 844 : 1440, height: phone ? 390 : 900 });
     if (random != null) await page.evaluateOnNewDocument((value) => { Math.random = () => value; }, random);
     await page.evaluateOnNewDocument(() => { localStorage.setItem('sp.name', 'Recovery Test'); sessionStorage.setItem('sp.entered', '1'); });
+    await seedReleaseRead(page);
     await page.goto(base, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => globalThis.__SP__?.store.get().connection.status === 'online' && document.querySelector('.lobby-screen'));
     return page;
@@ -108,7 +110,7 @@ describe('0.2.3 follow-up client features', { skip: !ENABLED }, () => {
       }
     } finally { await ctx.close(); }
   });
-  test('co-op opening reroll shows a unanimous vote, clears stale readiness and can be rejected', { timeout: 45000 }, async () => {
+  test('co-op opening reroll shows a unanimous vote, clears stale readiness, lets another seat start one and a rejection cancels it', { timeout: 45000 }, async () => {
     const ctx = await browser.createBrowserContext();
     try {
       const host = await pageIn(ctx), guest = await pageIn(ctx);
@@ -142,13 +144,14 @@ describe('0.2.3 follow-up client features', { skip: !ENABLED }, () => {
       assert.ok(state.players.filter((p) => !p.isBot).every((p) => !p.ready));
       await host.bringToFront();
       await host.waitForFunction(() => !!document.querySelector('.brief-reroll button:not(:disabled)'));
-      // Wait out the documented server anti-burst interval before a second request.
-      await new Promise((resolve) => setTimeout(resolve, 350));
-      await host.click('.brief-reroll button');
-      await guest.waitForSelector('.brief-reroll .btn--danger');
+      // The seat that started the first vote is still on its 30 s cooldown, so another seat starts the next vote.
       await guest.bringToFront();
-      await guest.click('.brief-reroll .btn--danger');
-      await host.waitForFunction(() => !globalThis.__SP__.store.get().match.public.rerollVote, { polling: 50 });
+      await guest.waitForFunction(() => !!document.querySelector('.brief-reroll button:not(:disabled)'));
+      await guest.click('.brief-reroll button');
+      await host.waitForSelector('.brief-reroll .btn--danger');
+      await host.bringToFront();
+      await host.click('.brief-reroll .btn--danger');
+      await guest.waitForFunction(() => !globalThis.__SP__.store.get().match.public.rerollVote, { polling: 50 });
       assert.equal(await host.evaluate(() => globalThis.__SP__.store.get().match.public.setupRevision), 1);
     } finally { await ctx.close(); }
   });
