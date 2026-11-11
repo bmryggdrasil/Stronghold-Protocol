@@ -28,7 +28,7 @@ English summary: [below](#english).
 
 - [声明](#声明) · [简介](#简介) · [功能一览](#功能一览)
 - [快速开始](#快速开始)：[整合包](#方式一整合包推荐) · [从源码运行](#方式二从源码运行) · [系统要求](#系统要求) · [端口与配置](#端口与配置) · [局域网联机](#和朋友一起玩局域网)
-- [插件](#插件) · [联机方式](#联机方式) · [操作](#操作) · [文档](#文档) · [开发与测试](#开发与测试) · [项目结构](#项目结构)
+- [插件](#插件) · [定制与接手](#定制分支与快速接手指南deploycustom) · [联机方式](#联机方式) · [操作](#操作) · [文档](#文档) · [开发与测试](#开发与测试) · [项目结构](#项目结构)
 - [许可证](#许可证) · [致谢与数据来源](#致谢与数据来源) · [贡献](#贡献)
 
 ## 简介
@@ -148,13 +148,41 @@ npm start          # 启动服务器：http://localhost:3000
 - **内置标准玩法扩展包（可选启用）**：
   - **干员拓展：丰川祥子**（[`plugins/op-oblvns/`](plugins/op-oblvns/)）：解锁 6★ 领主近卫丰川祥子（Ave Mujica / Oblivionis），支持自由追踪音符、S1 八音符齐奏、S2 钢琴/风琴双音色切换、S3 四音符齐奏与锁血守护，以及 450 点 Ave Mujica 全队 Fever 爆发与玫粉色技力槽；
   - **干员拓展：结城理**（[`plugins/op-makoto/`](plugins/op-makoto/)）：解锁 6★ 傀儡师特种结城理（Persona 3 Reload / Makoto Yuki），支持 Persona 召唤、恐惧处决、双人格转换、弱点伤害判定与 S.E.E.S. 盟约总攻击机制；
-  - 房主建房时勾选即可在自选编队（DIY）中挑选，未开启插件的房间完全遵循官方 v0.3.1 纯净卡池。
+  - 房主建房时勾选即可在自选编队（DIY）中挑选，未开启插件的房间完全遵循官方原版纯净卡池（支持第三期「规程·序列Ⅰ」及全部 5 个官方版本）。
 - **服主安装**：将插件文件夹放进服务器的 `plugins/`，或用 `node tools/plugin.mjs install <zip路径或HTTPS地址>` 安装；远程地址需带 `--sha256`。工作台也支持从社区目录安装和导入 Forge 工坊包。服主可在 `plugins/config.json` 限定可用插件。
 - **房主开启**：在房间顶部的「原版 / 插件 ×N」面板里选外观或玩法插件、修改插件设置、选择插件模式。玩法插件的内容会由所有玩家下载并校验，房间标为「非官方」，统计总览默认不计入。
 - **玩家个人设置**：「设置 → 外观插件 / 界面插件」只影响自己的浏览器；个人不能另装玩法插件改变房间规则。外观插件只换画面与声音，界面插件只读允许的对局信息。
 - **自己制作**：打开启动窗口 `Studio:` 行的地址，使用 `/studio/` 插件工作台选模板、按官方名称选目标、拖放素材、实时预览、试一场并回放，最后打包分享。工作台限本机和局域网，修改需要钥匙。
 
 脚本执行默认关闭。服主可以用 `SP_PLUGIN_SCRIPTS=sandbox` 开启沙箱脚本（或启动时加 `--scripts sandbox`；Windows 双击 `scripts\start-windows-sandbox.bat`）；原生受信任模式还需审查、固定锁文件哈希和玩家同意，公网部署需 `trusted-force`。开服设置见 [部署指南](docs/DEPLOY.md)，作者从[插件新手指南](docs/PLUGIN-GUIDE.md)开始，格式与限制见[插件参考](docs/PLUGINS.md)，接口列表见[插件 API 表](docs/PLUGIN-API.md)。
+
+## 定制分支与快速接手指南（deploy/custom）
+
+> 面向新对话 / 新维护者的仓内快速导览；云主机 IP、SSH 密钥路径及完整运维凭证保存在桌面运维文档 `Stronghold-Protocol_运维与开发维护全过程手册.md` 中，不写入仓库文件。
+
+### 1. 分支与远端约定
+- **`deploy/custom`（当前部署分支）**：基于 `upstream/dev`（v0.3.4 预发布，默认第三期「规程·序列Ⅰ」`act3autochess@V3_1`，同时保留全部 5 个官方版本）合入所有定制改动。
+- **历史备份**：合入 v0.3.4 前的定制快照保留在 `backup/deploy-custom-v031`；早期原版内置实现归档在 `backups/legacy-custom-ops/` 与 `backup/custom-legacy-ops` 分支。
+- **GitHub Push 约束**：本机 CLI Token 仅含 `repo` 权限（不含 `workflow`），合入上游更新时需保持 `.github/workflows/` 与 `origin/deploy/custom` 一致（即不修改或新增 workflow YAML）。
+
+### 2. 核心定制架构落点
+| 定制模块 | 关键文件 / 符号 | 说明 |
+|---|---|---|
+| 自制干员 Manifest 2 扩展包 | [plugins/op-oblvns/](plugins/op-oblvns/) · [plugins/op-makoto/](plugins/op-makoto/) | 声明全 5 个官方 `versions`（否则 0.3.4+ 玩法包默认仅限 `act2autochess`），通过 `art.ref` 复用官方 `char_4182_oblvns` / `char_4217_makoto` 美术与语音资源 |
+| 战斗机制解耦 | [`customKits.js`](server/sim/content/customKits.js) · [`op-oblvns.js`](server/sim/content/custom/op-oblvns.js) · [`op-makoto.js`](server/sim/content/custom/op-makoto.js) · [`content/index.js`](server/sim/content/index.js) | `kitOf()` 优先解析自定义机制包，兼顾 Fever、双音色与 Persona 总攻击，不影响未选插件的官方卡池 |
+| 自选别名与清单 | [`DIY_CHAR_ALIASES`](shared/protocol.js) · [data/assets.json](data/assets.json) · [tools/fetch-assets.mjs](tools/fetch-assets.mjs) | 兼容旧版 ID 到命名空间 ID；`--only-operator` 与 `pluginOperatorExtras` 支持按干员补充资源而不丢弃既有配置 |
+| 练度 / 工坊与时装工具 | [`officialPotential.js`](server/plugins/officialPotential.js) · [tools/forge-workshop.mjs](tools/forge-workshop.mjs) · [tools/install-official-skins.mjs](tools/install-official-skins.mjs) | 保留 3 档官方练度、模组阶段与 Forge 工坊 / 官方时装安装链 |
+| 无限金币测试接口 `oalecd7e` | [`C2S`](shared/protocol.js) · [`Lobby`](server/lobby.js) · [`MatchProxy`](server/match/host/proxy.js) · [`platform.js`](server/match/match/platform.js) · [`main.js`](public/js/main.js) | 全局按键 `oalecd7e` 或控制台 `window.oalecd7e()` 触发；支持原版、多版本与插件宿主；局外输入记录 `pendingCheatFunds`，仅下一局注入 `999999` 资金并在开局立即销毁 |
+
+### 3. 线上运行状态与回归命令
+- **非追踪目录保留**：服务器 `plugins/` 除随库跟踪的 `op-oblvns` / `op-makoto` 外，另装有 `official-skins-01`、`official-skins-02`（在 `plugins/config.json` 默认全局开启，适用全版本）、3 个 UI 插件与 6 个第二期 Forge 玩法包（未设 `versions`，仅 `act2autochess` 可选），均被 `.gitignore` 忽略，拉取更新时禁止误删。
+- **素材增量同步规则**：`public/assets/` 不提交 Git；代码更新后在服务器（若工作区存在 `--add-only` 改写的 `M data/assets.json`，先 `git checkout -- data/assets.json`）重置到 `fork/deploy/custom`，再执行 `npm install --omit=dev` 与 `node tools/fetch-assets.mjs --refresh-index --add-only --asset-source=mirror`。
+- **定制回归速跑**：
+  ```bash
+  node tools/plugin.mjs check
+  node --test test/plugins/op-custom.test.js test/plugins/op-custom-loadout.test.js test/plugins/op-custom-battle.test.js test/custom-test-funds.test.js
+  npm run check:imports && npm run typecheck
+  ```
 
 ## 联机方式
 
