@@ -22,15 +22,19 @@ const make = (t, opts = {}) => {
 const pick = (m, idx, setupRevision = m.setupRevision) => m.handle('p_0', { t: 'g.bondGroup', idx, setupRevision });
 const available = gd => gd.bondIds.filter(id => gd.bond(id).weight > 0 && !gd.modeInactiveBonds.has(id));
 const offOf = m => new Set([...m.disabledBonds, ...m.staticInactiveBonds]);
-// Independent statement of the tutorial, against real operator records.
+// Independent statement of the rule, against real operator records: an operator of a core bond is out when all its core
+// bonds are grey; add-ons decide only for an operator without one (owner's official play, 2026-11-13: a lit core bond
+// never loses a member).
 const excluded = (gd, rec, off) => {
   const core = (rec.bonds || []).filter(id => gd.bond(id)?.isCore);
   const addon = (rec.bonds || []).filter(id => !gd.bond(id)?.isCore);
-  return core.some(id => off.has(id)) || (addon.length > 0 && addon.every(id => off.has(id)));
+  return core.length ? core.every(id => off.has(id)) : addon.length > 0 && addon.every(id => off.has(id));
 };
 
-for (const [mode, nCore, nAddon] of [['funny', 4, 1], ['normal', 5, 4], ['hard', 5, 4], ['abyss', 5, 4]]) {
-  test(`co-op ${mode}: half the available cores + configured add-ons, deterministic`, () => {
+// co-op 终极: 5 of 10 core and 5 of 16 add-on bonds greyed in every briefing of the 2026-11-10/11 recording BV13LWM6BEvY;
+// 险境 / 绝境 the same and 标准 0 of 8 core, 2 of 10 add-ons (BV11NW869ELq parts 3–5, 10); 规程等级1 / 极速模拟: 2 of 10 add-ons
+for (const [mode, nCore, nAddon] of [['funny', 0, 2], ['normal', 5, 5], ['hard', 5, 5], ['abyss', 5, 5]]) {
+  test(`co-op ${mode}: the profile's core and add-on counts, deterministic`, () => {
     const gd = new GameData(data, `mode_multi_${mode}`);
     const draw = drawDisabledBonds(gd, createRng(37));
     assert.deepEqual(draw, drawDisabledBonds(gd, createRng(37)));
@@ -43,7 +47,7 @@ for (const [mode, nCore, nAddon] of [['funny', 4, 1], ['normal', 5, 4], ['hard',
   });
 }
 
-for (const [modeId, size, addons] of [['mode_single_1', 4, 1], ['mode_single_12', 5, 4], ['mode_single_funny', 4, 1]]) {
+for (const [modeId, size, addons] of [['mode_single_1', 4, 2], ['mode_single_12', 5, 5], ['mode_single_funny', 4, 2]]) {
   test(`${modeId}: disjoint groups, pick greys the other; no shop or copies drawn before pick`, t => {
     const h = make(t, { modeId, seed: 29 }), m = h.m, ps = h.ps('p_0');
     const beforeRng = m.rngShop.state();
@@ -140,14 +144,18 @@ test('briefing completion defaults to first group, including a timed briefing', 
   }
 });
 
-test('exclusion: any grey core, or ALL add-ons; no add-ons is not itself a ban', () => {
+test('exclusion: all its cores grey; ALL add-ons only without a core bond; no add-ons is not itself a ban', () => {
   const gd = new GameData(data, 'mode_single_12');
-  const c = gd.bondIds.find(id => gd.bond(id).isCore);
+  const [c, c2] = gd.bondIds.filter(id => gd.bond(id).isCore);
   const [a, b] = gd.bondIds.filter(id => !gd.bond(id).isCore);
+  assert.equal(gd.bondsExclude({ bonds: [c, c2, a] }, new Set([c])), false, 'a second, lit core keeps the operator');
+  assert.equal(gd.bondsExclude({ bonds: [c, c2, a] }, new Set([c, c2])), true);
   const rec = { bonds: [c, a, b] };
   assert.equal(gd.bondsExclude(rec, new Set([c])), true, 'active add-ons cannot rescue a grey core');
   assert.equal(gd.bondsExclude(rec, new Set([a])), false);
-  assert.equal(gd.bondsExclude(rec, new Set([a, b])), true, 'active core cannot rescue all-grey add-ons');
+  assert.equal(gd.bondsExclude(rec, new Set([a, b])), false, 'a lit core keeps its member although all its add-ons are grey');
+  assert.equal(gd.bondsExclude({ bonds: [a, b] }, new Set([a, b])), true, 'no core bond: all add-ons grey is out');
+  assert.equal(gd.bondsExclude({ bonds: [a, b] }, new Set([a])), false);
   assert.equal(gd.bondsExclude({ bonds: [c] }, new Set()), false);
   assert.equal(gd.bondsExclude({ bonds: [] }, new Set()), false);
   const low = new GameData(data, 'mode_single_1');
@@ -155,9 +163,42 @@ test('exclusion: any grey core, or ALL add-ons; no add-ons is not itself a ban',
   assert.equal(low.bondsExclude({ bonds: ['egirShip', a] }, low.modeInactiveBonds), true);
 });
 
+test('a lit core bond never loses a member, in solo groups and co-op draws (owner, 2026-11-13)', () => {
+  for (const mode of ['mode_single_1', 'mode_single_12', 'mode_multi_funny', 'mode_multi_abyss']) {
+    const gd = new GameData(data, mode);
+    for (let seed = 1; seed <= 60; seed += 1) {
+      const draw = drawDisabledBonds(gd, createRng(seed));
+      for (const greyGroup of draw.choice ? draw.choice.groups : [[]]) {
+        const off = new Set([...draw.drawn, ...draw.staticOff, ...greyGroup]);
+        const banned = new Set(gd.visibleChess.filter(id => gd.bondsExclude(gd.chess(id), off)));
+        for (const id of gd.bondIds) {
+          if (!gd.bond(id).isCore || off.has(id)) continue;
+          const lost = gd.visibleChess.filter(cid => banned.has(cid) && (gd.chess(cid).bonds || []).includes(id));
+          assert.deepEqual(lost, [], `${mode} seed ${seed}: lit core ${id} lost ${lost}`);
+        }
+      }
+    }
+  }
+});
+
+test('a 自选 piece of two core bonds stays while one of them is lit (seed 21 splits 炎 / 维多利亚)', t => {
+  const h = make(t, { modeId: 'mode_single_12', seed: 21 }), m = h.m, ps = h.ps('p_0');
+  const slot = 'chess_char_5_diy1_a', charId = 'char_017_huang';
+  assert.equal(ps.setDiy({ [slot]: { charId, skillIndex: 0 } }, { kitted: [charId] }), true);
+  ps.diyBring = Object.freeze([slot]);
+  ps.initDiyStock(new Set());
+  h.start();
+  assert.deepEqual(ps.gd.chess(slot).bonds, ['yanShip', 'victoriaShip']);
+  const groups = m.bondChoice.groups;
+  assert.ok(groups.every(g => g.includes('yanShip') !== g.includes('victoriaShip')), 'the seed splits the two cores');
+  pick(m, groups.findIndex(g => g.includes('victoriaShip')));
+  assert.equal(ps.diyStock.has(slot), true);
+  assert.equal(ps.diyBanned.includes(slot), false);
+});
+
 test('pick rebuilds 自选 stock, shop, promotion rewards, named pools and direct grants respect exclusion', t => {
   const custom = structuredClone(data);
-  const h = make(t, { data: custom, modeId: 'mode_single_12', seed: 21 }), m = h.m, ps = h.ps('p_0');
+  const h = make(t, { data: custom, modeId: 'mode_single_12', seed: 22 }), m = h.m, ps = h.ps('p_0');
   const slot = 'chess_char_5_diy1_a', charId = 'char_017_huang';
   assert.equal(ps.setDiy({ [slot]: { charId, skillIndex: 0 } }, { kitted: [charId] }), true);
   ps.initDiyStock(new Set());
@@ -167,7 +208,8 @@ test('pick rebuilds 自选 stock, shop, promotion rewards, named pools and direc
   assert.equal(ps.diyStock.has(slot), true);
   h.start();
   const rec = ps.gd.chess(slot);
-  const grey = m.bondChoice.groups.findIndex(g => g.some(id => rec.bonds.includes(id)));
+  // both of its cores (炎, 维多利亚) in one group: greying that group takes the piece out
+  const grey = m.bondChoice.groups.findIndex(g => rec.bonds.every(id => g.includes(id)));
   assert.ok(grey >= 0);
   pick(m, 1 - grey);
   assert.equal(ps.diyStock.has(slot), false);
