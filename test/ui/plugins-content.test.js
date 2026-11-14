@@ -26,7 +26,6 @@ import { createBattleRunner } from '../../public/js/battle/runner.js';
 import { buildRecord, aggregateStats, migrateStats, STATS_VERSION, contentOf, isModdedRecord } from '../../public/js/ui/stats.js';
 import { roomFacts } from '../../public/js/screens/room.js';
 import { roomPluginFacts, isModdedRoom } from '../../public/js/ui/pluginTag.js';
-import { extraKittedCount, ExtraOperatorsHintView } from '../../public/js/ui/pluginPanel.js';
 import { installDiySync } from '../../public/js/ui/loadoutSync.js';
 import { createPluginRegistry } from '../../server/plugins/registry.js';
 import { createContentSets } from '../../server/plugins/contentSets.js';
@@ -441,28 +440,5 @@ describe('statistics and the room\'s facts with gameplay plugins', () => {
     // the original game: no wait
     const vanilla = { ...room, seats: room.seats.map((s) => ({ ...s, content: undefined })), content: { cs: 'ab'.repeat(32), vanilla: true, plugins: [] } };
     assert.deepEqual([roomFacts(vanilla, 'h').contentReady, roomFacts(vanilla, 'h').canStart, roomFacts(vanilla, 'g').myContent], [true, true, 'ready']);
-  });
-
-  test('PluginPanel extra DIY operators hint: counts only ready content sets outside a match and opens Custom Squad', () => {
-    const cs = 'cd'.repeat(32);
-    const ready = { kind: 'plugins', cs, status: 'ready', kitted: ['char_x_a', 'char_x_b'] };
-    assert.equal(extraKittedCount(ready, cs, false), 2);
-    assert.equal(extraKittedCount(ready, cs, true), 0);
-    assert.equal(extraKittedCount({ ...ready, status: 'loading' }, cs, false), 0);
-    assert.equal(extraKittedCount({ ...ready, kitted: [] }, cs, false), 0);
-    assert.equal(extraKittedCount(ready, 'ef'.repeat(32), false), 0);
-    assert.equal(ExtraOperatorsHintView({ count: 0 }), null);
-    let opened = 0;
-    const vnode = ExtraOperatorsHintView({ count: 2, onOpenDiy: () => { opened += 1; } });
-    const btns = [];
-    (function walk(v) {
-      if (Array.isArray(v)) { v.forEach(walk); return; }
-      if (!v || typeof v !== 'object') return;
-      if (v.props?.['data-testid'] === 'plugpanel-open-diy') btns.push(v);
-      walk(v.props?.children);
-    }(vnode));
-    assert.equal(btns.length, 1);
-    btns[0].props.onClick();
-    assert.equal(opened, 1);
   });
 });

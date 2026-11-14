@@ -1106,7 +1106,7 @@
 .plugrow__warn, .plugpanel__warnings li { color: #ffb066; font-size: calc(.13 * var(--t)); line-height: 1.6; }
 .plugpanel__warnings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .04rem; }
 .plugpanel__warnings .icon { width: .15rem; height: .15rem; margin-right: .06rem; vertical-align: -.02rem; }
-.plugpanel__reapply, .plugpanel__diy { display: flex; flex-wrap: wrap; align-items: center; gap: .08rem .12rem; }
+.plugpanel__reapply { display: flex; flex-wrap: wrap; align-items: center; gap: .08rem .12rem; }
 .ui-slot { display: flex; flex-direction: column; gap: .04rem; min-width: 0; }
 .ui-slot:empty { display: none; }
 /* [ASSUMED] color-scheme: dark clears the iframe's opaque white canvas. A background the plugin paints still shows. */
@@ -1124,8 +1124,7 @@
   position: absolute; z-index: 6; right: .92rem; bottom: calc(4.76rem + .12rem); width: 2.6rem;
   max-height: calc(100% - 4.88rem - 1.7rem); overflow: auto; pointer-events: auto;
 }
-.plugpanel__reapply .set-hint, .plugpanel__diy .set-hint { margin: 0; }
-.plugpanel__diy .set-hint { color: var(--text-md); }
+.plugpanel__reapply .set-hint { margin: 0; }
 /* gameplay plugins (DESIGN §32.6 P1c): the unofficial marks (tag, panel rows, UnofficialMark of the briefing / HUD / result),
    the room's plugin modes and this page's check of the room's content set */
 .plugtag.is-unofficial { color: #ff8a5c; border-color: rgba(255, 106, 61, .7); background: rgba(255, 106, 61, .12); }

@@ -107,23 +107,6 @@ test('needsContent / seasonOf / versionLabel / periodLine', () => {
   assert.equal(V.isDefaultVersion('act1autochess'), false);
 });
 
-test('versionContentStatus: non-default versions accept both vanilla version sets and modded room content sets on that version', () => {
-  const v = 'act3autochess@V3_1';
-  const rcs = 'cd'.repeat(32);
-  assert.equal(V.versionContentStatus(null, null), 'ready');
-  assert.equal(V.versionContentStatus({ kind: 'idle', status: 'idle' }, 'act2autochess'), 'ready');
-  assert.equal(V.versionContentStatus(null, v), 'loading');
-  assert.equal(V.versionContentStatus({ kind: 'version', version: v, status: 'ready' }, v), 'ready');
-  assert.equal(V.versionContentStatus({ kind: 'version', version: v, status: 'failed' }, v), 'failed');
-  assert.equal(V.versionContentStatus({ kind: 'version', version: 'act1autochess', status: 'ready' }, v), 'loading');
-  assert.equal(V.versionContentStatus({ kind: 'plugins', cs: rcs, version: v, status: 'ready' }, v, rcs), 'ready');
-  assert.equal(V.versionContentStatus({ kind: 'plugins', cs: rcs, version: v, status: 'failed' }, v, rcs), 'failed');
-  assert.equal(V.versionContentStatus({ kind: 'plugins', cs: rcs, version: v, status: 'loading' }, v, rcs), 'loading');
-  assert.equal(V.versionContentStatus({ kind: 'plugins', cs: rcs, version: 'act2autochess', status: 'ready' }, v, rcs), 'loading');
-  assert.equal(V.versionContentStatus({ kind: 'plugins', cs: rcs, version: v, status: 'ready' }, v, 'ab'.repeat(32)), 'loading');
-  assert.equal(V.versionContentStatus({ kind: 'plugins', cs: rcs, version: v, status: 'ready' }, v, null), 'loading');
-});
-
 test('the client renders no research texts of the data (spec / implFormula / howToPlay / note)', () => {
   const files = [];
   const walk = (dir) => { for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const p = path.join(dir, e.name); if (e.isDirectory()) walk(p); else if (p.endsWith('.js')) files.push(p); } };

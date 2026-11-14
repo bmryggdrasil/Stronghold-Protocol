@@ -32,7 +32,6 @@ import { toastError } from './toasts.js';
 import { net } from '../net.js';
 import { useStore } from '../store.js';
 import { catalog, contentSet, loadCatalog, cosmeticPlugins, installedCount, pluginName, unofficialPlugins, personal, personalSet } from '../content.js';
-import { openLoadout } from './loadoutSync.js';
 import { roomVersion } from '../versions.js';
 import { appVersionMatches, pluginSupportsVersion } from '../../../shared/plugins/manifest.js';
 import { toggleRecommend, uiPluginEntries, uiRecommend, visibleRecommend } from './uiPlugins.js';
@@ -91,24 +90,6 @@ function ContentState({ cs }) {
   if (c.status === 'failed') return html`<p class="set-hint plugpanel__content is-warn" data-testid="content-state">${t('插件内容未能通过校验，请刷新页面重试')}</p>`;
   const pct = c.total > 0 ? Math.min(100, Math.floor((c.loaded / c.total) * 100)) : 0;
   return html`<p class="set-hint plugpanel__content" data-testid="content-state">${t('正在载入插件内容…{pct}%', { pct })}</p>`;
-}
-
-/** How many extra DIY operators the room's active content set adds outside a match (0 when not ready or none). */
-export const extraKittedCount = (c, cs, inMatch = false) => (cs && !inMatch && c?.cs === cs && c?.kind === 'plugins' && c?.status === 'ready' && Array.isArray(c.kitted) ? c.kitted.length : 0);
-
-/** Pure view for the extra DIY operator hint + Custom Squad shortcut inside PluginPanel. */
-export function ExtraOperatorsHintView({ count, onOpenDiy = null }) {
-  if (!count) return null;
-  return html`<div class="plugpanel__diy" data-testid="plugpanel-diy-hint">
-    <p class="set-hint">${t('当前插件新增 {n} 名自选干员，需在房间内加入「自选编队」后方可带入对局', { n: count })}</p>
-    ${onOpenDiy ? html`<${Button} variant="ghost" size="sm" data-testid="plugpanel-open-diy" onClick=${onOpenDiy}>${t('前往自选编队')}<//>` : null}
-  </div>`;
-}
-
-/** Shown once the room's loaded plugins add extra DIY operators so players know to pick them in 自选编队 before starting. */
-export function ExtraOperatorsHint({ cs, inMatch = false, onOpenDiy = null }) {
-  const c = useStore((s) => s, Object.is, contentSet);
-  return ExtraOperatorsHintView({ count: extraKittedCount(c, cs, inMatch), onOpenDiy });
 }
 
 /** The room's mode with gameplay plugins: the official one of the difficulty, or a plugin mode (room.setMode). */
@@ -187,7 +168,6 @@ export function PluginPanel({ open, room, myId, onClose }) {
       ${anyContent ? html`<p class="set-hint">${t('改变玩法的插件会改变本房间的数据与规则；这样的对局为非官方对局，不计入统计总览。')}</p>` : null}
       ${ruleLine(f.rules) ? html`<p class="set-hint" data-testid="plugin-rules">${ruleLine(f.rules)}</p>` : null}
       <${ContentState} cs=${f.modded ? f.cs : null} />
-      <${ExtraOperatorsHint} cs=${f.modded ? f.cs : null} inMatch=${f.inMatch} onOpenDiy=${() => { onClose?.(); openLoadout('room', null, 'diy'); }} />
       <${ModePicker} room=${room} f=${f} busy=${busy} onPick=${pickMode} />
       ${f.inMatch ? html`<p class="set-hint">${t('模拟进行中，插件不能更改')}</p>`
         : f.editable ? null : html`<p class="set-hint">${t('由创建者设置')}</p>`}

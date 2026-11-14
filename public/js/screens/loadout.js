@@ -45,7 +45,6 @@ import { profGlyphUrl, subProfIconUrl, bondIconUrl, uiUrl } from '../ui/assetUrl
 import { GarrisonBlock } from '../ui/detailPanel.js';
 import { data, useData, localAsset, DATA_FILES } from '../data.js';
 import { useStore, loadPref, savePref } from '../store.js';
-import { installedCount } from '../content.js';
 import { PHASE } from '../../../shared/constants.js';
 import { ruleOption } from '../../../shared/plugins/rules.js';
 import {
@@ -601,7 +600,6 @@ function LoadoutScreen({ st }) {
   const ready = useData('chess', 'bonds', 'assets', 'local', 'backups', 'garrisons', 'effects');
   const phase = useStore((s) => s.match?.public?.phase || null);
   const inMatch = useStore((s) => !!s.room?.inMatch);
-  const hasServerPlugins = useStore((s) => installedCount(s) > 0 && !s.room);
   // co-op briefing (INFO_CHECK, 25 s): the overlay covers the briefing's own countdown, so it shows the time left — the
   // match locks the loadout when it runs out (review fix: edits were silently only for the next match)
   const infoDeadline = useStore((s) => (s.match?.public?.phase === PHASE.INFO_CHECK ? s.match.public.deadline : 0));
@@ -893,7 +891,7 @@ function LoadoutScreen({ st }) {
       </div>`}
       ${tab === 'diy' ? html`<div class="lo-top__right">
         ${syncText ? html`<span class=${cx('lo-sync', syncCls)} role="status" data-testid="diy-sync">${t(syncText)}</span>` : null}
-        <span class="lo-count">${t('已选')} <b class="num">${nDiy}</b><span class="num t-dim">/${diySlots.length || 4}</span></span>
+        <span class="lo-count">${t('已选')} <b class="num">${nDiy}</b><span class="num t-dim">/4</span></span>
         <${Button} variant="ghost" size="sm" data-testid="diy-export" disabled=${!nDiy} onClick=${openExport} title=${t('导出自选编队（可复制或下载）')}>${t('导出')}<//>
         <${Button} variant="ghost" size="sm" data-testid="diy-import" disabled=${!ready} onClick=${openImport} title=${t('导入自选编队（粘贴或选择文件）')}>${t('导入')}<//>
         <${Button} variant="secondary" size="sm" icon="refresh" data-testid="diy-reset" disabled=${!nDiy} onClick=${clearDiy}>${t('全部清空')}<//>
@@ -966,7 +964,7 @@ function LoadoutScreen({ st }) {
       : html`<p class=${cx('lo-note', locked && 'is-locked')}><${Icon} name="info" />${locked ? lockedText : fromText}</p>`}
     ${!ready ? html`<div class="lo-loading"><${Spinner} size="sm" />${t('正在载入干员数据（打开页面后仅载入一次）…')}</div>`
       : lost.length ? html`<${DataMissing} files=${lost} />` : tab === 'diy'
-      ? html`<${DiyPanel} m=${m} picks=${st.diy || {}} legal=${diyLegal} kitted=${st.diyKitted} onSet=${setDiySlot} ops=${st.ops} onOps=${setOpsOf} lobbyPluginHint=${st.from === 'lobby' && hasServerPlugins} />`
+      ? html`<${DiyPanel} m=${m} picks=${st.diy || {}} legal=${diyLegal} kitted=${st.diyKitted} onSet=${setDiySlot} ops=${st.ops} onOps=${setOpsOf} />`
       : tab === 'ownership'
       ? html`<${OwnershipPanel} m=${m} roster=${ownRoster} notOwned=${st.notOwned} onToggle=${toggleOwned} />`
       : deck ? html`<main class="lo-deckwrap">

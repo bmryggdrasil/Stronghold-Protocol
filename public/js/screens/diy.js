@@ -423,7 +423,7 @@ export function DiyPanel(props) {
 }
 
 /** The tab's view (no hooks: the tests draw it): `picking` = the slot being filled, or null. */
-export function DiyPanelView({ m, picks, legal, kitted, onSet, picking, onPicking: setPicking, ops = {}, onOps = null, lobbyPluginHint = false }) {
+export function DiyPanelView({ m, picks, legal, kitted, onSet, picking, onPicking: setPicking, ops = {}, onOps = null }) {
   const slots = diySlotList(diyData());
   const slot = picking ? slots.find((s) => s.slotId === picking) : null;
   const tiers = [...new Set(slots.map((s) => s.tier))];
@@ -439,7 +439,6 @@ export function DiyPanelView({ m, picks, legal, kitted, onSet, picking, onPickin
     <div class="own__bar">
       <p class="own__lead">${lead}</p>
     </div>
-    ${lobbyPluginHint ? html`<p class="diy__hint" data-testid="diy-plugin-hint">${t('服务器扩展干员插件需进入房间并开启插件后，在房间内的「自选编队」中选用方可带入对局')}</p>` : null}
     <div class="diy__body">
       ${tiers.map((tier) => html`<section key=${tier} class="own-tier diy-tier" data-tier=${tier} aria-label=${t('{tier}阶', { tier })}>
         <h3 class="own-tier__head"><${TierChip} tier=${tier} size="sm" /><span class="num">${ROMAN[tier]}</span><span>${t('阶')}</span></h3>

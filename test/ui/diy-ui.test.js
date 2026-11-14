@@ -268,10 +268,6 @@ describe('自选编队 tab (screens/diy.js)', () => {
     assert.ok(txt.includes(DATA.backups.units[SIEGE].name) && txt.includes('已持有') && txt.includes('S3') && txt.includes('SOL-X'), txt);
     assert.ok(textOf(slots[2]).includes('原型'));
     assert.ok(hasClass(slots[1], 'is-empty') && textOf(slots[1]).includes('选择干员'));
-    assert.equal([...walk(tree)].filter((v) => v.props?.['data-testid'] === 'diy-plugin-hint').length, 0);
-    const withHint = expand(DiyPanelView({ m: null, picks: {}, legal: {}, kitted: KIT, onSet() {}, picking: null, onPicking() {}, lobbyPluginHint: true }));
-    const hint = [...walk(withHint)].find((v) => v.props?.['data-testid'] === 'diy-plugin-hint');
-    assert.ok(hint && textOf(hint).includes('自选编队'));
   });
 
   test('the picker: the slot\'s operators; choosing one and its skill / module confirms the pick', () => {
