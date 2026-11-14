@@ -378,6 +378,19 @@
   box-shadow: 0 0 4px rgba(0, 0, 0, .6);
 }
 .bond__ban .icon { width: 80%; height: 80%; }
+/* a corner mark in the ✕'s place (BondDisc `tag`): the briefing's official 阵容不完整 fold (ui/outer img_bond_banned,
+   ui/matchInfo.js BondLackTag), ≈ .54 of the ring, centred on the disc box's top-right corner (recording BV13LWM6BEvY
+   0:12); without the art a dark fold with a person glyph */
+.bond__tag {
+  position: absolute; top: calc(var(--disc) * -.27); right: calc(var(--disc) * -.27);
+  width: calc(var(--disc) * .54); height: calc(var(--disc) * .54); pointer-events: none;
+  background: var(--tag) center / 100% 100% no-repeat;
+}
+.bond__tag.is-plain {
+  display: grid; place-items: start end; color: #e3e7e6;
+  background: linear-gradient(225deg, rgba(18, 22, 21, .94) 50%, transparent 50%);
+}
+.bond__tag.is-plain .icon { width: 46%; height: 46%; margin: 6% 6% 0 0; }
 .bond.is-frozen { opacity: .5; }
 .bond.is-clickable { cursor: pointer; }
 .bond.is-clickable:hover .bond__core { transform: scale(1.07); }
@@ -1137,6 +1150,8 @@
 .plugpanel__content { margin: 0; }
 .plugpanel__content.is-ready { color: var(--mint-400); }
 .plugpanel__content.is-warn { color: #ffb066; }
+.plugpanel__diy { display: flex; flex-wrap: wrap; align-items: center; gap: .08rem .12rem; padding: .08rem .1rem; border: 1px solid rgba(78, 216, 175, .35); background: rgba(78, 216, 175, .07); }
+.plugpanel__diy .set-hint { margin: 0; color: var(--mint-400); }
 .modmark {
   display: inline-flex; align-items: center; height: .26rem; padding: 0 .1rem; border: 1px solid rgba(255, 106, 61, .75);
   background: rgba(255, 106, 61, .14); color: #ff8a5c; font-size: calc(.13 * var(--t)); font-weight: 800; letter-spacing: .08em;

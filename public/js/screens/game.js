@@ -92,7 +92,7 @@ import { TopBar, liveLp, ownLeaks, uniteRemaining, tempInfo, tempReadyReason } f
 import { BondStrip, BondPopup } from '../ui/bondStrip.js';
 import { TeamPanel } from '../ui/teamPanel.js';
 import { ShopBar } from '../ui/shopBar.js';
-import { regulationFamily } from '../ui/regHud.js';
+import { regLook } from '../ui/regHud.js';
 import { selectedBondTimers } from '../ui/bondTimers.js';
 import { DetailPanel, resolveDetail } from '../ui/detailPanel.js';
 import { RewardOverlay } from '../ui/rewardOverlay.js';
@@ -107,7 +107,7 @@ import { EmoteWheel } from '../ui/emotes.js';
 import { BandCommand, CommandDraft } from '../ui/bandCommand.js';
 import { EffectsList } from '../ui/effectsList.js';
 import { CombatHud } from '../ui/combatHud.js';
-import { LeaderRank, loadLeaderRankHidden, saveLeaderRankHidden } from '../ui/leaderRank.js';
+import { LeaderRank, loadLeaderRankHidden, saveLeaderRankHidden, useLeaderRankSpot } from '../ui/leaderRank.js';
 import { CombatMetricsPanel } from '../ui/combatMetrics.js';
 import { SettingsModal, settingsStore, useSettings } from '../ui/settings.js';
 import { ExitModal, AwayOverlay, awayStore } from '../ui/matchChrome.js';
@@ -132,7 +132,7 @@ import {
   terrainInfo, deviceInfo, deviceTipAt, noteDeviceUnits, deviceUnitsForEntry,
   countdownState, shopBlockReason, stageOverrides, effectiveStage, watchTarget, dropFailureReason,
   previewEnemyKey, prepCamera, prepCameraFor, deployFoldsShop, deployZoomStep, deployZoomRemember, prepDeployCamera, deployFieldOf, fieldTile, panelSide, panelSlots, bondPopupPlace, unitLoadout, deployedRecord,
-  mergeTarget, mergeProgress, modeOffBonds, readyFundsPrompt, readyShopFold, ownerBandId, ownDiyRecord, ownStandIn, roundStartReplay, heldDraftPub,
+  mergeTarget, mergeProgress, modeOffBonds, readyFundsPrompt, readyCommandPrompt, readyPrompt, readyShopFold, ownerBandId, ownDiyRecord, ownStandIn, roundStartReplay, heldDraftPub,
 } from '../ui/gameLogic.js';
 import { toast } from '../ui/toasts.js';
 import { LoadoutButton } from './loadout.js';
@@ -160,7 +160,7 @@ import { t, tParts } from '../../../shared/i18n.js';
 import { buyVoiceTrigger, themeViewSnap } from '../../../shared/uiTheme.js';
 import { noteThemeBuy, noteThemeView, themePack } from '../uiTheme.js';
 import { contentSet } from '../content.js';
-import { DEFAULT_VERSION, shownVersion } from '../versions.js';
+import { DEFAULT_VERSION, shownVersion, versionContentStatus } from '../versions.js';
 import { VersionVote } from '../ui/versionVote.js';
 import { TestConsole } from '../ui/testConsole.js';
 
@@ -194,9 +194,10 @@ export function GameScreen() {
   const away = useStore((s) => s.away, Object.is, awayStore);
   const autoplay = useStore((s) => !!(Array.isArray(s.match.public?.players) && s.match.public.players.find((p) => p && p.playerId === s.me.playerId)?.autoplay));
   const gd = useGameData();
-  // another official version: its checked data on the page first (see the header)
+  // another official version: its checked data on the page first (see the header; accept a room's modded content set built on it)
   const version = useStore((s) => { const v = shownVersion(s); return v !== DEFAULT_VERSION ? v : null; });
-  const versionState = useStore((c) => (c.kind === 'version' && c.version === version ? c.status : 'loading'), Object.is, contentSet);
+  const roomCs = useStore((s) => (s.room?.content?.vanilla === false ? s.room.content.cs : null));
+  const versionState = useStore((c) => versionContentStatus(c, version, roomCs), Object.is, contentSet);
   const versionReady = !version || versionState === 'ready';
   const voteRoom = useStore((s) => (s.room?.versionVote && !s.room.inMatch ? s.room : null));
   // 协议启动！'s official sprites (ui/protocolBoot.js), fetched while the briefing and the band draft run
@@ -261,19 +262,24 @@ function MatchScreen() {
   const spectator = useStore((s) => isSpectating(s.room, s.me.playerId));
   const playerSettings = useSettings();
   const metricsSetting = playerSettings.combatMetrics === true;
-  // 规程 with 乌萨斯齐心团 / 可露希尔 installed: the round, result and 联防 plates are the pack's banners (ui/prefab/banners.js)
-  const pfPack = usePrefabPack(regulationFamily(data.get('config')) ? data.get('local')?.groups : null, playerSettings.uiTheme);
+  // the installed official theme's pack (乌萨斯齐心团 / 可露希尔), every version: its bond rings and avatar badges (§37.205:
+  // the discs stayed mint in 盟约, the owner 2026-11-14 「官方用不同的主题局内盟约层数的圆形图标颜色也是不一样的」), and since
+  // §37.206 its round, result and 联防 banners too (ui/prefab/banners.js) — the 规程 themes in full on 盟约
+  const themePf = usePrefabPack(data.get('local')?.groups, playerSettings.uiTheme);
+  const pfPack = themePf;
+  // the 规程 look (its shop, layout and bond row under the top bar): 规程, or a theme with the 规程 interface (regLook)
+  const regView = regLook(data.get('config'), data.get('local')?.groups, playerSettings.uiTheme);
   const pfBanners = packBanners(pfPack);
   const pfStill = playerSettings.themeMotion === false;
   const pfSpine = pfPack ? themePack(playerSettings.uiTheme)?.character || null : null;
-  // 完美连胜 / 领袖伤害 on the team panel's avatars (ui/avatarBadges.js, every version): the 规程 theme's own avatar
-  // prefabs, else ac_n_initial's (loaded only when the theme has none); neither installed → the CSS stand-ins
-  const badgeBase = usePrefabPack(hasAvatarBadges(pfPack) ? null : data.get('local')?.groups, 'ac_n_initial', { includeDefault: true });
-  const badgePack = avatarBadgePack(pfPack, badgeBase);
+  // 完美连胜 / 领袖伤害 on the team panel's avatars (ui/avatarBadges.js, every version): the theme's own avatar prefabs,
+  // else ac_n_initial's (loaded only when the theme has none); neither installed → the CSS stand-ins
+  const badgeBase = usePrefabPack(hasAvatarBadges(themePf) ? null : data.get('local')?.groups, 'ac_n_initial', { includeDefault: true });
+  const badgePack = avatarBadgePack(themePf, badgeBase);
   const teamBadges = useMemo(() => ({ pack: badgePack, still: pfStill }), [badgePack, pfStill]);
   // the pack's bond_icon_view_item rings (img_active / img_inactive, 75 units on a 58-unit disc) behind the bond discs
-  const pfBondOn = pfPack?.doc?.prefabs?.['bondicon/bond_icon_view_item'] ? pfPack.sprite('bg_active') : '';
-  const pfBondOff = pfBondOn ? pfPack.sprite('bg_inactive') : '';
+  const pfBondOn = themePf?.doc?.prefabs?.['bondicon/bond_icon_view_item'] ? themePf.sprite('bg_active') : '';
+  const pfBondOff = pfBondOn ? themePf.sprite('bg_inactive') : '';
   const pfBondRings = pfBondOn && pfBondOff ? { '--pf-bond-on': `url("${pfBondOn}")`, '--pf-bond-off': `url("${pfBondOff}")` } : null;
   // gameplay plugins (DESIGN §32.6): the HUD corner's MOD mark — re-rendered only when the room's content changes
   const modRoom = useStore((s) => (s.room?.content?.vanilla === false ? s.room : null), (a, b) => (a?.content ?? null) === (b?.content ?? null));
@@ -339,7 +345,7 @@ function MatchScreen() {
   const [pauseBusy, setPauseBusy] = useState(false);
   // the leader ranking (ui/leaderRank.js, every version since §37.149). Shown whenever m.public carries leaderTop —
   // spectators included.
-  // The 隐藏 choice is this browser's, remembered across reloads. Absent on 盟约, so the panel stays off.
+  // The 隐藏 choice is this browser's, remembered across reloads.
   const [leaderHidden, setLeaderHidden] = useState(() => loadLeaderRankHidden());
   const toggleLeaderRank = () => setLeaderHidden((v) => {
     const next = !v;
@@ -351,6 +357,8 @@ function MatchScreen() {
   const battleState = useStore((s) => s.match.battle, shallowEqual); // local battle runner (client-side combat)
 
   const phase = pub?.phase;
+  // the ranking leaves a tall right column alone (可露希尔's TV countdown, the overtime warning under it: §37.201)
+  const leaderSpot = useLeaderRankSpot(isBossPhase(phase) && Array.isArray(pub?.leaderTop));
   const mode = phaseMode(phase);
   const combat = isCombatPhase(phase);
   const solo = roomSolo || String(pub?.modeId || '').includes('single');
@@ -1154,16 +1162,28 @@ function MatchScreen() {
   const removeSpectator = useCallback((playerId) => actions.removeSpectator(playerId), []);
   // 准备 with funds left asks first: the prep's end wipes them (community report #4; not 坎诺特, not at 0 funds, not
   // under AI 托管 — gameLogic.readyFundsPrompt). The button and Space both come here.
+  // A usable drag command not used this round asks too, in the same box (gameLogic.readyCommandPrompt, §37.201); its
+  // 「本局不再提醒」 box mutes that reason for the rest of this match (this screen's life: a new match mounts it anew).
   const askingReady = useRef(false);
+  const commandAskMuted = useRef(false);
   const toggleReady = useCallback(async (r) => {
     const L = live.current;
     const me = Array.isArray(L.pub?.players) ? L.pub.players.find((p) => p && p.playerId === L.myId) : null;
-    const ask = r ? readyFundsPrompt(L.priv, { keptBands: data.get('config')?.economy?.leftoverFundsKeptByBands, autoplay: !!me?.autoplay }) : null;
+    const autoplay = !!me?.autoplay;
+    const funds = r ? readyFundsPrompt(L.priv, { keptBands: data.get('config')?.economy?.leftoverFundsKeptByBands, autoplay }) : null;
+    const command = r && !commandAskMuted.current ? readyCommandPrompt(L.priv, { autoplay }) : null;
+    const ask = readyPrompt(funds, command);
     if (ask) {
       if (askingReady.current) return;
       askingReady.current = true;
-      const ok = await confirmDialog(ask);
+      const mute = { on: false };
+      const ok = await confirmDialog({ ...ask, text: html`<div class="ready-ask">
+        ${ask.lines.map((line, i) => html`<p key=${i} class="modal__text">${line}</p>`)}
+        ${ask.mutable ? html`<label class="ready-ask__mute"><input type="checkbox" data-testid="ready-ask-mute"
+          onChange=${(e) => { mute.on = !!e.currentTarget.checked; }} />${t('本局不再提醒未使用的指令')}</label>` : null}
+      </div>` });
       askingReady.current = false;
+      if (mute.on) commandAskMuted.current = true;
       const now = live.current;
       if (!ok || now.pub?.phase !== PHASE.PREP || now.priv?.ready) return;
     }
@@ -1847,12 +1867,12 @@ function MatchScreen() {
   const dSide = (() => {
     if (ufShown) {
       const { rem, vp } = panelFrame();
-      return panelSide(underframeRect(ufGeo, rem), panelSlots(vp, rem, { shopOpen, reg: regulationFamily(gd.config) }));
+      return panelSide(underframeRect(ufGeo, rem), panelSlots(vp, rem, { shopOpen, reg: regView }));
     }
     if (mergeGeo && resolved) {
       const { rem, vp } = panelFrame();
       const half = (mergeGeo.s > 0 ? mergeGeo.s : 64) * 1.05; // the tile diamond's box (underframeRect's)
-      return panelSide({ left: mergeGeo.x - half, right: mergeGeo.x + half, top: mergeGeo.y - half, bottom: mergeGeo.y + half }, panelSlots(vp, rem, { shopOpen, reg: regulationFamily(gd.config) }));
+      return panelSide({ left: mergeGeo.x - half, right: mergeGeo.x + half, top: mergeGeo.y - half, bottom: mergeGeo.y + half }, panelSlots(vp, rem, { shopOpen, reg: regView }));
     }
     return 'left';
   })();
@@ -1904,7 +1924,7 @@ function MatchScreen() {
     bonds: data.list('bonds'), chess: (id) => data.lookup('chess', id), mode: getMode(pub?.modeId),
   }) : null;
 
-  return html`<div class=${cx('screen', 'gm', `gm--${mode}`, regulationFamily(gd.config) && 'gm--reg', isBossPhase(phase) && 'is-boss', drag && 'is-dragging', barCollapsed && 'is-collapsed', deployPartial && 'is-deploy-partial', (sp || hasPersonalChoice || offerBlocksPrep(pub?.offers)) && 'has-sp', sp && 'has-spdraft', pen && 'is-pen', readyWhy && 'has-readywhy')}
+  return html`<div class=${cx('screen', 'gm', `gm--${mode}`, regView && 'gm--reg', isBossPhase(phase) && 'is-boss', drag && 'is-dragging', barCollapsed && 'is-collapsed', deployPartial && 'is-deploy-partial', (sp || hasPersonalChoice || offerBlocksPrep(pub?.offers)) && 'has-sp', sp && 'has-spdraft', pen && 'is-pen', readyWhy && 'has-readywhy')}
       data-camera=${pen ? 'pen' : camKind}>
     <div class="gm__field" ref=${hostRef} onContextMenu=${(e) => e.preventDefault()}></div>
     ${viewKind === 'loading' ? html`<div class="gm__loading"><${Spinner} label="LOADING FIELD" /></div>` : null}
@@ -1976,7 +1996,7 @@ function MatchScreen() {
       <${Ticker} />
 
       ${isBossPhase(phase) && Array.isArray(pub?.leaderTop) ? html`<${LeaderRank} rows=${pub.leaderTop} players=${pub.players}
-        maxHp=${pub.bossHp && pub.bossHp.max} hidden=${leaderHidden} onToggle=${toggleLeaderRank} />` : null}
+        maxHp=${pub.bossHp && pub.bossHp.max} hidden=${leaderHidden} onToggle=${toggleLeaderRank} spot=${leaderSpot} />` : null}
 
       <div class="ui-slot gm__ui-slot" data-ui-slot="hud.right" aria-label=${t('界面插件')} dangerouslySetInnerHTML=${{ __html: '' }}></div>
 

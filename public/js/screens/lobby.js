@@ -40,7 +40,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from '../../ven
 import { DIFFICULTIES, DIFFICULTY_NAMES, DIFFICULTY_COLORS, ROOM_CODE_LEN, MAX_SEATS, MAX_SPECTATORS, modeIdFor, ERR } from '../../../shared/constants.js';
 import { html, confirmDialog, Button, Icon, MicroLabel, Modal, PingPill, Spinner, DifficultyIcon, TextField } from '../ui/components.js';
 import { Sprite, Img } from '../ui/gameComponents.js';
-import { uiUrl } from '../ui/assetUrls.js';
+import { uiUrl, medalIconUrl } from '../ui/assetUrls.js';
 import { peekStatsRecords, trophyMedalOf, aggregateStats, recordsOfSeason } from '../ui/stats.js';
 import { levelProgress, levelOf } from './settle.js';
 import { OwnBackdrop, LobbyScene, LobbyMediaButton } from '../ui/lobbyMedia.js';
@@ -62,9 +62,10 @@ import { data, getConfig, getMode, getStage, localAsset, useData } from '../data
 import { t, tc, N_ } from '../../../shared/i18n.js';
 import { scriptOf } from '../../../shared/i18nPacks.js';
 import { NoticesButton } from '../ui/notices.js';
+import { LobbyPluginTag } from '../ui/pluginTag.js';
 import { VersionSwitch } from '../ui/versionPicker.js';
-import { contentSet, retryContentSet } from '../content.js';
-import { DEFAULT_VERSION, lobbyVersion, offeredDifficulties, fallbackDifficulty, ladderModes, ladderPick, seasonOf, soloTimedOf, soloTimeMsgid, versionLabel } from '../versions.js';
+import { activeLobbyPlugins, contentSet, lobbyPreview, retryContentSet } from '../content.js';
+import { DEFAULT_VERSION, lobbyVersion, offeredDifficulties, fallbackDifficulty, ladderModes, ladderPick, seasonOf, soloTimedOf, soloTimeMsgid, versionContentStatus, versionLabel } from '../versions.js';
 
 /** Official mode texts (activity_table act2autochess.modeDataDict), fallback when config.json is absent. */
 export const MODE_TEXT = {
@@ -460,7 +461,7 @@ function AchievementCard({ onOpen }) {
       </svg>
       <span class="hub-ach__mark"><${Emblem} /></span>
       <span class="hub-ach__rank">
-        <${Img} src=${medal ? uiUrl(data.get('assets'), `medalIcon/${medal.iconId}`) : null} class="hub-ach__medal" fallback=${html`<${Icon} name="rook" />`} />
+        <${Img} src=${medal ? medalIconUrl(data.get('assets'), medal.iconId) : null} class="hub-ach__medal" fallback=${html`<${Icon} name="rook" />`} />
         <small><${Icon} name="crown" /><b class="num">${trophies}</b></small>
       </span>
     </span>
@@ -781,9 +782,14 @@ export function LobbyScreen() {
   // one, or the server's fallback when the version lacks it (the pref is only overwritten when the player picks)
   const versions = useStore((s) => s.versions);
   const version = useStore(lobbyVersion);
-  const versionLoading = useStore((c) => version !== DEFAULT_VERSION && (c.kind !== 'version' || c.version !== version || c.status !== 'ready'), Object.is, contentSet);
-  // its set failed to load or its check (the chip's 重试 sits under the modal): 选择模拟协议 says so and offers 重试 too
-  const versionFailed = useStore((c) => version !== DEFAULT_VERSION && c.kind === 'version' && c.version === version && c.status === 'failed', Object.is, contentSet);
+  const preview = useStore((s) => s, Object.is, lobbyPreview);
+  const previewCs = (!preview.version || preview.version === version) && preview.content?.vanilla === false ? preview.content.cs : null;
+  const previewFailed = preview.status === 'failed' && (!preview.version || preview.version === version);
+  const activeState = useStore((c) => (version !== DEFAULT_VERSION
+    ? versionContentStatus(c, version, previewCs)
+    : (previewCs ? (c.kind === 'plugins' && c.cs === previewCs ? c.status : 'loading') : 'ready')), Object.is, contentSet);
+  const versionFailed = activeState === 'failed' || (previewFailed && !previewCs);
+  const versionLoading = !versionFailed && activeState !== 'ready';
   const cfg = getConfig();
   // null while that version's data is not on screen: the card states no time rule and the dialog hides the switch
   const soloTimed = soloTimedOf(versionLoading ? null : cfg, version);
@@ -811,10 +817,12 @@ export function LobbyScreen() {
   };
   // 独立模拟: at the difficulty picked on 选择模拟协议; 创建同盟: at the remembered one, changed in the room by the host
   // (`version`: the lobby's, only when welcome.versions is present — protocol §4; omitted when the server offers 第二期下半 alone)
+  const lobbyRoomPlugins = activeLobbyPlugins(versions ? version : DEFAULT_VERSION);
   const create = (mode) => run('create', () => net.request('room.create', {
     mode, difficulty: mode === 'solo' ? shownSolo : shownCoop, ...(testMode && asTest ? { test: true } : {}), ...(versions ? { version } : {}),
     ...(mode === 'solo' && soloFree && soloTimed === true ? { soloUnlimited: true } : {}),
     ...(mode === 'solo' && shownMode ? { modeId: shownMode } : {}),
+    ...(lobbyRoomPlugins !== undefined ? { plugins: lobbyRoomPlugins } : {}),
   }));
   const join = (c = code) => {
     // `onClick=${join}` hands the click EVENT as the first argument, and a default parameter only applies to
@@ -865,6 +873,7 @@ export function LobbyScreen() {
         </div>
       </div>
       <div class="topbar__right">
+        <${LobbyPluginTag} />
         <${VersionSwitch} />
         <${ResumeMatchButton} />
       </div>

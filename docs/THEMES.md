@@ -101,31 +101,35 @@ destroy `#DC3B3B` / `#290808`, countdown `#FF0000`, garrison `#FFFFFF33`).
 
 ## Images
 
-A picture is a stretched background layered over the fill the element already has, unless the table says 9-slice
-or icon. Chess frames with no `slice` use 8 px [ASSUMED] so the card centre stays empty. Level icons are a
-`contain` overlay that replaces the chip (the octagon would show around a slanted icon).
+A picture is a stretched background layered over the fill the element already has, unless the table says 9-slice,
+frame, contain or icon. Chess frames with no `slice` use 8 px [ASSUMED] so the card centre stays empty. Level icons are a
+`contain` overlay that replaces the chip (the octagon would show around a slanted icon). A *frame* is the whole picture
+as a 9-slice on the element's `::before`, centre included, behind the content and over the element's fill, at the
+official size: one prefab unit is .0144rem (`--sp-slice-rem-<slot>`; the client draws the official ~1334-unit canvas
+1.44×). The element keeps its layout. Stretched whole, a sliced picture bent (可露希尔's window frame over the
+本局信息 drawer, history §37.204).
 
 | Slot | Official place | Our element | Draw |
 |---|---|---|---|
-| `hud_player_info` | player HUD | `.gtop__band` | stretch |
+| `hud_player_info` | player HUD | `.gtop__band` | stretch, or a frame when `slice` is set |
 | `game_start` | game start | `.pboot__stage` | cover |
-| `help_battle` | enemy intel | `.edrawer` | stretch |
+| `help_battle` | enemy intel | `.edrawer` | a frame when `slice` is set, otherwise contain. With 可露希尔's window frame the rows start under its title bar and the close button lies on its ✕ |
 | `round_start` | round plate | `.mpop--round .mpop__panel` | stretch over the fill |
 | `round_result` | result frame | `.rdialog__box` | 9-slice when `slice` is set, otherwise stretch. Give it a slice when `battleEnd` is also set, or the banner covers the stretch |
 | `effect_choose_self_select` | self pick | `.spov__inner` | stretch |
 | `img_check_player` | check, self | `.gtop__iconbtn` | stretch |
 | `img_check_enemy` | check, enemy | `.enemybtn` | stretch |
-| `countdown` | countdown | `.gtop__right .countdown` | stretch |
-| `countdown_effectchoose` | draft countdown | `.spov__turn .countdown` | stretch |
-| `countdown_outer` | clock frame | `.gtop__clock` | stretch |
+| `countdown` | countdown | `.gtop__right .countdown` | contain |
+| `countdown_effectchoose` | draft countdown | `.spov__turn .countdown` | contain |
+| `countdown_outer` | clock frame | `.gtop__clock` | contain |
 | `prep_ready` | ready | `.readybtn` | stretch, or 9-slice when `slice` is set |
 | `shop_main` | shop row | `.shopbar__row` | stretch over the gradient. The official packs omit it: their named sprite is the ~200px end card, and none of the three shop prefabs has a plate at least 480×150 that is not a shadow or a deco strip [ASSUMED] |
-| `boss_damage` | boss bar | `.bossbar` | stretch; the dark fill stays |
+| `boss_damage` | boss bar | `.bossbar` | stretch, or a frame when `slice` is set; the dark fill stays |
 | `img_shop_sell_chess_normal` | sell | `.uframe__btn--sell .uframe__plate` | stretch |
 | `img_shop_sell_chess_hover` | sell hover | the same plate on `:hover` | stretch |
-| `chess_frame_normal` | frames 1–4 | `.scard--t1` … `.scard--t4` | 9-slice. On `.scard--reg` the same sprite is a full-bleed face (the centre shows) |
-| `chess_frame_level_five` | frame 5 | `.scard--t5` | 9-slice; full-bleed on `.scard--reg` |
-| `chess_frame_level_six` | frame 6 | `.scard--t6` | 9-slice; full-bleed on `.scard--reg` |
+| `chess_frame_normal` | frames 1–4 | `.scard--t1` … `.scard--t4` | 9-slice. On `.scard--reg` the same sprite is a full-bleed face (the centre shows); so on 盟约 cards for 乌萨斯齐心团 / 可露希尔, whose sprites are faces (§37.205) |
+| `chess_frame_level_five` | frame 5 | `.scard--t5` | 9-slice; full-bleed on `.scard--reg` and on the face packs' 盟约 cards |
+| `chess_frame_level_six` | frame 6 | `.scard--t6` | 9-slice; full-bleed on `.scard--reg` and on the face packs' 盟约 cards |
 | `chess_level_icon_1` … `_6` | level icons | `.tier--1` … `.tier--6` | icon in place of the chip. On a 规程 card it has the official card's size: 64×64 for 可露希尔, 59×34 for 乌萨斯齐心团, 40×40 for ac_n_initial, .56rem square for another pack |
 | `shop_level_1` … `_6` | (盟约) shop level box | `.lvcard.lvcard--1` … `.lvcard--6` `.lvcard__plate` | contained in the middle of the level card (1rem) (the sprite carries 「LEVEL」 and the numeral, so ours is hidden and 升级 moves to the bottom). The class follows `shop.level`. The official packs' sprites are their player detail level icon (`player_detail_shop_level_hub`); the 规程 升级 button does not use this slot, it draws the pack's own `group_upgrade` (below) |
 | `char_spine_outer` | funds-card plate | `.funds__char--spine` | contained background behind a Spine. The host exists only when `character` is set. An image character does not also paint this plate. A pack that supplies a slice uses that 9-slice instead. The three official sprites have no Unity border [ASSUMED] |
@@ -168,10 +172,15 @@ No `character` leaves the 盟约 funds box as it is today. On a 规程 match wit
 
 ## 规程 HUD from the official prefabs
 
-In a 规程 match with 乌萨斯齐心团 or 可露希尔 selected and installed, the top bar, the countdown and the ready button are
-that pack's own prefabs (`group_hud`, `panel_countdown`, `panel_prep_ready`), drawn layer by layer from
-`themes/<id>/prefabs.json` (`ui/prefab/`). ac_n_initial, a custom theme, 盟约 and a pack without `prefabs.json` (an
-asset pack extracted before 0.3.4) keep today's top bar (PR #643 / #827), countdown and ready button.
+With 乌萨斯齐心团 or 可露希尔 selected and installed, the top bar, the countdown and the ready button are that pack's own
+prefabs (`group_hud`, `panel_countdown`, `panel_prep_ready`), drawn layer by layer from `themes/<id>/prefabs.json`
+(`ui/prefab/`) — in every version: since §37.206 a 盟约 match wears the 规程 look in full with such a theme (the owner's
+decision of 2026-11-14), `ui/regHud.js regLook`: the 规程 shop (its chrome, card faces, character plate), the top bar, the
+round, result, 联防 and 轮到你选 banners, the bond rings and avatar badges, and the 规程 layout (`.gm--reg`: the bond row
+under the top bar, the detail panel above the shop). What follows the rules stays with the version (`regulationFamily`):
+the 规程 commands, the core groups and their briefing, the sweep's fourth tab. ac_n_initial, a custom theme and a pack
+without `prefabs.json` (an asset pack extracted before 0.3.4) keep today's top bar (PR #643 / #827), countdown, ready
+button and shop.
 
 - Layout: Unity's RectTransform (anchors, pivot, sizeDelta, anchoredPosition), Horizontal / Vertical layout groups,
   ContentSizeFitter, LayoutElement, RectMask2D (with softness), slider fills, CanvasGroup alpha, local scale and z
