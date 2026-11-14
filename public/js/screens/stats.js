@@ -50,7 +50,7 @@ import { t, N_ } from '../../../shared/i18n.js';
 import { scriptOf } from '../../../shared/i18nPacks.js';
 import { VersionTag } from '../ui/pluginTag.js';
 import { contentSet, retryContentSet } from '../content.js';
-import { DEFAULT_VERSION, shownVersion, seasonOf, versionLabel, welcomeVersion } from '../versions.js';
+import { DEFAULT_VERSION, shownVersion, seasonOf, versionLabel, welcomeVersion, versionContentStatus } from '../versions.js';
 import { VERSIONS } from '../../../shared/versions.js';
 
 const cx = (...p) => p.flat().filter(Boolean).join(' ');
@@ -590,8 +590,10 @@ function Replay({ rec, onBack }) {
   const gd = useGameData();
   const res = useMemo(() => recordToResult(rec), [rec]);
   const version = recordVersion(rec);
-  const versionReady = useStore((c) => (version === DEFAULT_VERSION ? c.kind !== 'version' : c.kind === 'version' && c.version === version && c.status === 'ready'), Object.is, contentSet);
-  const failed = useStore((c) => version !== DEFAULT_VERSION && c.kind === 'version' && c.version === version && c.status === 'failed', Object.is, contentSet);
+  const roomCs = useStore((s) => (s.room?.content?.vanilla === false ? s.room.content.cs : null));
+  const versionState = useStore((c) => (version === DEFAULT_VERSION ? (c?.kind === 'version' ? 'loading' : 'ready') : versionContentStatus(c, version, roomCs)), Object.is, contentSet);
+  const versionReady = versionState === 'ready';
+  const failed = versionState === 'failed';
   const shown = useStore(shownVersion);
   const inRoom = useStore((s) => !!s.room);
   const offered = useStore((s) => versionOffered(s, version));
