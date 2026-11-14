@@ -63,6 +63,7 @@ import { isCombatPhase } from './ui/gameLogic/phases.js';
 import { registerImportedAssetWorker } from './assetCache.js';
 import { LoadoutHost } from './screens/loadout.js';
 import { StatsHost, useStatsOpen } from './screens/stats.js';
+import { LobbyPluginHost } from './ui/pluginTag.js';
 import { CoveredVersionVote } from './ui/versionVote.js';
 import { installRehearsal } from './battle/rehearsal.js';
 import { recordResult, installStatsRecorder } from './ui/stats.js';
@@ -374,6 +375,7 @@ function App() {
     <${GuideHost} />
     <${ReleaseNotesHost} />
     <${LoadoutHost} />
+    <${LobbyPluginHost} />
     <${StatsHost} />
     <${VoteOverOverlays} />
   </div>`;

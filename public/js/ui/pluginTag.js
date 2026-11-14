@@ -12,9 +12,9 @@
 //     row [ASSUMED placement]); nothing for 第二期下半. Not unofficial: an official version is the original game.
 // Texts go through t() (docs/I18N.md).
 
-import { useState } from '../../vendor/hooks.module.js';
+import { useEffect, useState } from '../../vendor/hooks.module.js';
 import { html, Icon } from './components.js';
-import { useStore } from '../store.js';
+import { createStore, useStore } from '../store.js';
 import { installedCount, lobbyPreview } from '../content.js';
 import { t } from '../../../shared/i18n.js';
 import { rulePhrases } from '../../../shared/plugins/rules.js';
@@ -137,28 +137,43 @@ export function lobbyPluginFacts(preview, installed = 0) {
   };
 }
 
+/** Store for the shared lobby plugin panel modal so content reloads inside 自选编队 never close it. */
+export const lobbyPluginModal = createStore({ open: false, onOpenDiy: null });
+export const openLobbyPlugins = (onOpenDiy = null) => lobbyPluginModal.set({ open: true, onOpenDiy });
+export const closeLobbyPlugins = () => lobbyPluginModal.set({ open: false, onOpenDiy: null });
+
+/** Mounted once at root (main.js): lazy-loads and renders LobbyPluginPanel above overlays. */
+export function LobbyPluginHost() {
+  const st = useStore((s) => s, Object.is, lobbyPluginModal);
+  const inRoom = useStore((s) => !!s.room);
+  const [Panel, setPanel] = useState(null);
+  useEffect(() => {
+    if (st.open && !Panel) {
+      import('./pluginPanel.js').then((m) => setPanel(() => m.LobbyPluginPanel), (err) => console.warn('[plugins] the panel did not load', err));
+    }
+  }, [st.open, Panel]);
+  useEffect(() => { if (inRoom && st.open) closeLobbyPlugins(); }, [inRoom, st.open]);
+  if (!st.open || inRoom || !Panel) return null;
+  return html`<${Panel} open=${true} onOpenDiy=${st.onOpenDiy} onClose=${closeLobbyPlugins} />`;
+}
+
 /**
  * The lobby's plugin tag (screens/lobby.js, screens/diy.js): lets the player switch room plugins before creating a
  * room so plugin operators can be configured in 大厅 → 干员调配 → 自选编队 and carried into the created room.
- * @param {{ class?: string, testId?: string, onOpenDiy?: (() => void) | null }} [props]
+ * @param {{ class?: string, testId?: string, onOpenDiy?: (() => void) | false | null }} [props]
  */
 export function LobbyPluginTag({ class: cls = '', testId = 'lobby-plugin-tag', onOpenDiy = null } = {}) {
   const installed = useStore(installedCount);
   const preview = useStore((s) => s, Object.is, lobbyPreview);
-  const [Panel, setPanel] = useState(null);
   if (!installed) return null;
   const f = lobbyPluginFacts(preview, installed);
   const rulesText = ruleLine(f.rules);
   const label = f.count ? t('插件 ×{n}', { n: f.count }) : t('原版');
   const aria = [label, rulesText].filter(Boolean).join(' · ');
-  const open = () => {
-    import('./pluginPanel.js').then((m) => setPanel(() => m.LobbyPluginPanel), (err) => console.warn('[plugins] the panel did not load', err));
-  };
-  return html`<button type="button" class=${cx('plugtag', f.count && 'is-modded', f.modded && 'is-unofficial', rulesText && 'plugtag--rules', cls)} data-testid=${testId} onClick=${open}
+  return html`<button type="button" class=${cx('plugtag', f.count && 'is-modded', f.modded && 'is-unofficial', rulesText && 'plugtag--rules', cls)} data-testid=${testId} onClick=${() => openLobbyPlugins(onOpenDiy)}
       title=${f.modded ? t('大厅已启用改变玩法的插件（非官方），创建房间时将自动带入') : t('大厅插件')} aria-label=${aria}>
     <${Icon} name=${f.count ? 'edit' : 'check'} />${label}${f.modded ? html`<b class="plugtag__mod">${t('非官方')}</b>` : null}${rulesText ? html`<span class="plugtag__rules" data-testid="lobby-plugin-rules">${rulesText}</span>` : null}
-  </button>
-  ${Panel ? html`<${Panel} open=${true} onOpenDiy=${onOpenDiy} onClose=${() => setPanel(null)} />` : null}`;
+  </button>`;
 }
 
 /**
