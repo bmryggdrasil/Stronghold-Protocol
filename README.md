@@ -2,7 +2,7 @@
 
 《明日方舟》季节性自走棋塔防玩法「卫戍协议：盟约」的**非官方同人复刻**：浏览器即开即玩，单人或 1–4 人联机合作。
 
-![version](https://img.shields.io/badge/version-0.3.3-2ea44f)
+![version](https://img.shields.io/badge/version-0.4.0-2ea44f)
 ![license](https://img.shields.io/badge/code%20license-GPL--3.0--or--later-blue)
 ![node](https://img.shields.io/badge/node-22%20%7C%2024-339933)
 
@@ -37,7 +37,8 @@ English summary: [below](#english).
 
 - **独立模拟**（单人）与**同盟模拟**（1–4 人**合作**，没有 PvP；空位可以加 AI 队友）。
 - 服务器是一个 Node.js 程序，**战斗在各玩家的浏览器里模拟**（和官方一样），服务器只管经济与回合，一台低功耗小主机就能开服。
-- 当前版本 0.3.4（`dev` 测试分支）：包含官方第三期「规程·序列Ⅰ」全部玩法、37 名新干员、26 个盟约、指令与装备栏机制、资源管理重做与多项战斗/UI 修复；自制干员封装为官方标准扩展包（`plugins/op-oblvns` 与 `plugins/op-makoto`，房主可在房间插件中按需启用，历史自制代码归档至 `backups/legacy-custom-ops/`），保留单局作弊测试接口（`oalecd7e`），详见 [CHANGELOG.md](CHANGELOG.md)。仍有少数规则按推断实现，与官方不一致的地方欢迎在 Issue 里反馈。
+- 当前版本 0.4.0：新增官方版本「规程·序列Ⅰ」（11 月 8 日开放的「卫戍协议·规程」，现为大厅默认）：单人规程等级 1–20 与极速模拟、指令、5 格装备区、每局盟约抽选、官方战场场景和赛季外观；另有界面主题（含官方主题；“全能的”可露希尔主题包另行提供，在设置里导入）、CN 2.7.91 的新干员和大量修复。共提供五个官方版本，详见 [CHANGELOG.md](CHANGELOG.md)。
+- 定制扩展（`deploy/custom`）：自制干员封装为官方标准扩展包（`plugins/op-oblvns` 与 `plugins/op-makoto`，支持在大厅与自选编队插件面板按需启用并自动带入房间；历史自制代码归档至 `backups/legacy-custom-ops/`），保留单局作弊测试接口（`oalecd7e`）与服务端自带 3 套官方 UI 主题资源。
 
 ## 功能一览
 
@@ -161,9 +162,9 @@ npm start          # 启动服务器：http://localhost:3000
 > 面向新对话 / 新维护者的仓内快速导览；云主机 IP、SSH 密钥路径及完整运维凭证保存在桌面运维文档 `Stronghold-Protocol_运维与开发维护全过程手册.md` 中，不写入仓库文件。
 
 ### 1. 分支与远端约定
-- **`deploy/custom`（当前部署分支）**：基于 `upstream/dev`（v0.3.4 预发布，默认第三期「规程·序列Ⅰ」`act3autochess@V3_1`，同时保留全部 5 个官方版本）合入所有定制改动。
-- **历史备份**：合入 v0.3.4 前的定制快照保留在 `backup/deploy-custom-v031`；早期原版内置实现归档在 `backups/legacy-custom-ops/` 与 `backup/custom-legacy-ops` 分支。
-- **GitHub Push 约束**：本机 CLI Token 仅含 `repo` 权限（不含 `workflow`），合入上游更新时需保持 `.github/workflows/` 与 `origin/deploy/custom` 一致（即不修改或新增 workflow YAML）。
+- **`deploy/custom`（当前部署分支）**：基于 `upstream/dev`（v0.4.0 `55f528e9`，默认第三期「规程·序列Ⅰ」`act3autochess@V3_1`，同时保留全部 5 个官方版本）合入所有定制改动。
+- **历史备份**：合入 v0.3.4 前的定制快照保留在 `backup/deploy-custom-v031`；v0.3.4 快照保留在 `backup/deploy-custom-v034`；早期原版内置实现归档在 `backups/legacy-custom-ops/` 与 `backup/custom-legacy-ops` 分支。
+- **GitHub Push 说明**：确保 GitHub CLI Token 具有 `repo` 与 `workflow` 权限（可通过 `gh auth status` 检查；缺失时执行 `gh auth refresh -h github.com -s workflow`），合入上游更新后即可直接推送 `.github/workflows/`。
 
 ### 2. 核心定制架构落点
 | 定制模块 | 关键文件 / 符号 | 说明 |

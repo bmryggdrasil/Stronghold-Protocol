@@ -223,7 +223,7 @@ The research JSONs in `docs/research/` (03, 05, 07) define **which** ids are nee
 | Bond icons (the real autochess glyphs) | ArknightsAssets2 `cn` `ui/autochess/[uc]autochesscommon/arts/bondicon/`. Fallback: the camp logo. | `bond/{bondId}.png` |
 | Shop item icons | AA2 `…/arts/shopitemicon/` | `item/{trapId}.png` |
 | Band (strategy) icons | AA2 `…/arts/bandicon/` | `band/{bandId}.png` |
-| Profession, sub-profession and battle-card icons | AA2 `arts/profession_hub`, `arts/ui/subprofessionicon`, `ui_battle_new/battlecard` | `prof/icon_{p}.png`, `prof/large_{p}.png`, `prof/battlecard_{p}.png`, `prof/sub/{subProfessionId}.png` |
+| Profession marks, sub-profession and battle-card icons | AA2 `arts/misc/profession_icons_v2_hub`, `arts/profession_hub`, `arts/ui/subprofessionicon`, `ui_battle_new/battlecard` | `prof/mark_{p}.png` (white-on-transparent sign used by 规程 shop cards), `prof/icon_{p}.png`, `prof/large_{p}.png`, `prof/battlecard_{p}.png`, `prof/sub/{subProfessionId}.png` |
 | UI sprites (see below) | AA2 `ui/autochess/**`, `arts/**`, `activity/[uc]act2autochess/**`, `battle/[pack]common/sprites` | `ui/{group}/{key}.png` |
 | Statistics artwork and fonts | [Official statistics template](https://ak-webview.hypergryph.com/autoChess/act1autochess) | `ui/statistics/`; fetched by asset setup, or separately with `node tools/fetch-stats-assets.mjs` |
 | The 36 battle emotes and the 19 玩法说明 (tutorial) pages, which `tools/local-extract` also extracts (GitHub issue #42: without the local client a server showed default emote icons) | AA2 `cn` `ui/emoticon/theme/[uc]{themeId}/icon/{picId}.png` (`shared/constants.js EMOTE_CATALOG`) and `arts/guidebookpages/[pack]autochess/{key}.png` (1024², shown at 16:9 like the local copies) | `ui/emoticon/{dir}/{picId}.png`, `ui/guide/{key}.png` |
@@ -343,7 +343,7 @@ remain local; no official scene bytes belong in git or fixtures.
 
 ### In-match UI themes
 
-The three official AUTOCHESS_SKIN themes — `ac_n_initial` 卫戍协议终端 (规程's default in-match look), `ac_n_iron` 乌萨斯齐心团 and `ac_s_closur` “全能的”可露希尔 — extract only with `tools/local-extract/extract.py --only theme` or `--only theme/<id>` (`tools/local-extract/autochess_themes.py`). A plain extract does not touch them, and they are not in `expected_local_groups`.
+The three official AUTOCHESS_SKIN themes — `ac_n_initial` 卫戍协议终端 (规程's default in-match look), `ac_n_iron` 乌萨斯齐心团 and `ac_s_closur` “全能的”可露希尔 — extract only with `tools/local-extract/extract.py --only theme` or `--only theme/<id>` (`tools/local-extract/autochess_themes.py`). The release packages carry `ac_n_initial` and `ac_n_iron`; `ac_s_closur` is held back and offered as an importable pack (`tools/package.mjs --theme-packs`; [THEMES.md](THEMES.md), history §37.232). A plain extract does not touch them, and they are not in `expected_local_groups`.
 
 ```sh
 python tools/local-extract/extract.py --only theme \

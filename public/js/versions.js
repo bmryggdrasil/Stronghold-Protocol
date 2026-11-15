@@ -290,11 +290,13 @@ export function musicSeason(s) {
 export const isDefaultVersion = (id) => id == null || id === DEFAULT_VERSION;
 
 /**
- * Settlement state of `contentSet` for an official version (`version` != DEFAULT_VERSION): accepts both the version's
- * own vanilla set (`kind === 'version'`) and a modded room/preview content set built on that version (`kind === 'plugins'`).
- * @param {any} c
- * @param {string | null | undefined} version
- * @param {string | null} [roomCs]
+ * How far the data of another official version is on this page (content.js contentSet), for the screens that wait for it
+ * (the match, a replay): its own checked set (`kind: 'version'`), or the room's content set with gameplay plugins built
+ * on that version (`kind: 'plugins'`, its index names the version — §37.210, from PR #949): a 规程 room with plugins
+ * never loads the plain 规程 set, so a match there waited on 正在载入模拟数据… for ever. 'ready' for the default data.
+ * @param {any} c the contentSet state
+ * @param {string | null | undefined} version the version shown
+ * @param {string | null} [roomCs] the room's content set with gameplay plugins, when there is one
  * @returns {'idle' | 'loading' | 'ready' | 'failed'}
  */
 export function versionContentStatus(c, version, roomCs = null) {
@@ -307,3 +309,6 @@ export function versionContentStatus(c, version, roomCs = null) {
   }
   return 'loading';
 }
+
+/** The room's content set with gameplay plugins (its cs), else null (versionContentStatus). @param {any} s */
+export const roomPluginCs = (s) => (s?.room?.content?.vanilla === false && typeof s.room.content.cs === 'string' ? s.room.content.cs : null);
